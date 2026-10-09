@@ -566,6 +566,24 @@ func mustCompile(pattern string) *regexp.Regexp {
 	return regexp.MustCompile(pattern)
 }
 
+// addChannelProp appends ", isolatedContext" to a `channel.call({...})`
+// argument object, tolerating trailing args like `, kNoTimeout` (v1.62+) and
+// multi-line objects. Best-effort: returns text unchanged with an error when
+// no form matches, so callers can decide whether it's fatal.
+func addChannelProp(text, channelCall string) (string, error) {
+	q := regexp.QuoteMeta(channelCall)
+	for _, pattern := range []string{
+		`(` + q + `\(\{[^}]*?)(\}\))`,
+		`(` + q + `\(\{[^}]*?)(\}, kNoTimeout\))`,
+		`(` + q + `\(\{[\s\S]*?)(}, kNoTimeout\))`,
+	} {
+		if updated, err := regexpReplace(text, pattern, "$1, isolatedContext$2"); err == nil {
+			return updated, nil
+		}
+	}
+	return text, fmt.Errorf("channel call not found: %s", channelCall)
+}
+
 // replaceBlock replaces the braced block starting at the first "{" at or after
 // startAnchor, preserving everything before the brace and after the matching
 // close. It returns the updated text. Unlike regexp lookaheads (unsupported by

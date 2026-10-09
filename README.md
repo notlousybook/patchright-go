@@ -28,6 +28,10 @@ or skip all that and just drive a browser:
 
 ```go
 import (
+    // NOTE: stay on the playwright-community import path. newer playwright-go
+    // tags (v0.61+) flipped back to github.com/mxschmitt/playwright-go which
+    // breaks every import for no reason. v0.6000.0 works fine against newer
+    // drivers, the client wrapper doesn't care about the binding version.
     pw "github.com/playwright-community/playwright-go"
     "github.com/notlousybook/patchright-go/browsers"
     "github.com/notlousybook/patchright-go/client"

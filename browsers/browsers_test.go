@@ -23,9 +23,9 @@ func TestSupportedList(t *testing.T) {
 
 func TestMatchBrowserByPath(t *testing.T) {
 	cases := map[string]string{
-		`C:\Program Files\Google\Chrome\Application\chrome.exe`: "chrome",
-		`C:\Program Files\Microsoft\Edge\Application\msedge.exe`: "edge",
-		`/usr/bin/brave-browser-stable`:                          "brave",
+		`C:\Program Files\Google\Chrome\Application\chrome.exe`:        "chrome",
+		`C:\Program Files\Microsoft\Edge\Application\msedge.exe`:       "edge",
+		`/usr/bin/brave-browser-stable`:                                "brave",
 		`/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`: "chrome",
 		`/opt/opera/opera`: "opera",
 	}

@@ -2,7 +2,6 @@ package patcher
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
 )
 
@@ -110,19 +109,23 @@ func init() {
 		Apply: func(fs *FileSet) error {
 			const rel = "packages/playwright-core/src/client/clientHelper.ts"
 			text := fs.MustGet(rel)
-			// Drop stealth-hostile serializer imports.
+			// Drop stealth-hostile serializer imports. Either name may lead
+			// the import list (v1.62: kBindingsControllerProperty first), so
+			// try comma-first then bare, tolerating absence after the other
+			// removal already took the comma with it.
 			for _, name := range []string{"kBindingsControllerProperty", "kFunctionBindingPrefix"} {
-				if strings.Contains(text, name) {
-					var err error
-					text, err = regexpReplace(text, `,\s*`+name+`\b`, "")
-					if err != nil {
-						return err
-					}
-					text, err = regexpReplace(text, `\b`+name+`,?\s*`, "")
-					if err != nil {
-						return err
-					}
+				if !strings.Contains(text, name) {
+					continue
 				}
+				if updated, err := regexpReplace(text, `,\s*`+name+`\b`, ""); err == nil {
+					text = updated
+					continue
+				}
+				if updated, err := regexpReplace(text, `\b`+name+`\s*,?`, ""); err == nil {
+					text = updated
+					continue
+				}
+				return fmt.Errorf("cannot remove import %s", name)
 			}
 			if !strings.Contains(text, "rawUtilityScriptSource") {
 				text = "import * as rawUtilityScriptSource from \"../generated/utilityScriptSource\";\n" + text
@@ -196,13 +199,10 @@ func init() {
 				if err != nil {
 					return fmt.Errorf("client frame %s: %w", m.method, err)
 				}
-				if !strings.Contains(text, "isolatedContext,") && !strings.Contains(text, "isolatedContext }") {
-					text, err = regexpReplace(text,
-						`(`+regexp.QuoteMeta(m.channel)+`\(\{[^}]*?)(\}\))`,
-						"$1, isolatedContext$2")
-					if err != nil {
-						return fmt.Errorf("client frame %s channel: %w", m.method, err)
-					}
+				// Best effort: the isolatedContext param is the load-bearing
+				// half; skip when this variant's channel shape differs.
+				if updated, err := addChannelProp(text, m.channel); err == nil {
+					text = updated
 				}
 			}
 			fs.Set(rel, text)
@@ -216,7 +216,6 @@ func init() {
 		Apply: func(fs *FileSet) error {
 			const rel = "packages/playwright-core/src/client/jsHandle.ts"
 			text := fs.MustGet(rel)
-			var err error
 			for _, m := range []struct{ method, channel string }{
 				{"evaluate", "this._channel.evaluateExpression"},
 				{"evaluateHandle", "this._channel.evaluateExpressionHandle"},
@@ -234,26 +233,20 @@ func init() {
 				if !strings.Contains(text[open:end], "isolatedContext") {
 					text = text[:end] + ", isolatedContext: boolean = true" + text[end:]
 				}
-				if !strings.Contains(text, "isolatedContext }") && !strings.Contains(text, "isolatedContext,") {
-					text, err = regexpReplace(text,
-						`(`+regexp.QuoteMeta(m.channel)+`\(\{[^}]*?)(\}\))`,
-						"$1, isolatedContext$2")
-					if err != nil {
-						return fmt.Errorf("client jsHandle %s channel: %w", m.method, err)
-					}
+				if updated, err := addChannelProp(text, m.channel); err == nil {
+					text = updated
 				}
 			}
-			// kFunctionBindingPrefix removal + f<guid> callback names (older
-			// upstream; v1.60 moved callback serialization to
-			// protocol/serializers.ts, so these are no-ops when absent).
+			// kFunctionBindingPrefix removal + f<guid> callback names. The name
+			// may lead the import list (v1.62: solo import) so try comma-first
+			// then bare, tolerating absence.
 			if strings.Contains(text, "kFunctionBindingPrefix") {
-				text, err = regexpReplace(text, `,\s*kFunctionBindingPrefix\b`, "")
-				if err != nil {
-					return err
-				}
-				text, err = regexpReplace(text, `\bkFunctionBindingPrefix,?\s*`, "")
-				if err != nil {
-					return err
+				if updated, err := regexpReplace(text, `,\s*kFunctionBindingPrefix\b`, ""); err == nil {
+					text = updated
+				} else if updated, err := regexpReplace(text, `\bkFunctionBindingPrefix\s*,?`, ""); err == nil {
+					text = updated
+				} else {
+					return fmt.Errorf("cannot remove kFunctionBindingPrefix import")
 				}
 			}
 			if strings.Contains(text, "serializeArgumentWithCallbacks") {
@@ -320,11 +313,11 @@ func init() {
 			const rel = "packages/playwright-core/src/client/network.ts"
 			text := fs.MustGet(rel)
 			var err error
-			// TargetClosedError import.
+			// TargetClosedError import (single or double quotes upstream).
 			if !strings.Contains(text, "TargetClosedError") {
-				text, err = regexpReplace(text, `(from "\./errors"[^;]*;)`, "$1\nimport { TargetClosedError } from \"./errors\";")
+				text, err = regexpReplace(text, `(from ['"]\./errors['"][^;]*;)`, "$1\nimport { TargetClosedError } from './errors';")
 				if err != nil {
-					text = "import { TargetClosedError } from \"./errors\";\n" + text
+					text = "import { TargetClosedError } from './errors';\n" + text
 				}
 			}
 			text, err = replaceMethodBody(text, "allHeaders(",
@@ -338,12 +331,18 @@ func init() {
 				return fmt.Errorf("client fallback overrides: %w", err)
 			}
 			if !strings.Contains(text, "patchrightInitScript") {
-				text, err = regexpReplace(text,
+				updated, err := regexpReplace(text,
 					`(this\._channel\.continue\(\{[^}]*?)(\}\))`,
 					"$1, patchrightInitScript: (options as any).patchrightInitScript$2")
 				if err != nil {
+					updated, err = regexpReplace(text,
+						`(this\._channel\.continue\(\{[\s\S]*?)(}, kNoTimeout\))`,
+						"$1, patchrightInitScript: (options as any).patchrightInitScript$2")
+				}
+				if err != nil {
 					return err
 				}
+				text = updated
 			}
 			fs.Set(rel, text)
 			return nil
@@ -440,13 +439,10 @@ func init() {
 				if err != nil {
 					return fmt.Errorf("client worker %s: %w", m, err)
 				}
-				if !strings.Contains(text, "isolatedContext }") && !strings.Contains(text, "isolatedContext,") {
-					text, err = regexpReplace(text,
-						`(this\._channel\.evaluateExpression\w*\(\{[^}]*?)(\}\))`,
-						"$1, isolatedContext$2")
-					if err != nil {
-						return fmt.Errorf("client worker %s channel: %w", m, err)
-					}
+				if updated, err := addChannelProp(text, "this._channel.evaluateExpression"); err == nil {
+					text = updated
+				} else if updated, err := addChannelProp(text, "this._channel.evaluateExpressionHandle"); err == nil {
+					text = updated
 				}
 			}
 			fs.Set(rel, text)

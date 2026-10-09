@@ -17,7 +17,7 @@ import (
 // fine, the wrapper doesn't care.
 //
 // Deprecated: kept so old code still compiles. Don't pin versions, just update.
-const PlaywrightVersion = "v1.60.0"
+const PlaywrightVersion = "v1.62.0"
 
 // ChromiumChannel is the branded channel used by the detection smoke test.
 const ChromiumChannel = "chrome"

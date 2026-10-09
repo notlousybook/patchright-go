@@ -64,7 +64,7 @@ func cmdList() {
 	}
 }
 
-func 	cmdPatch(args []string) {
+func cmdPatch(args []string) {
 	fs := flag.NewFlagSet("patch", flag.ExitOnError)
 	dir := fs.String("playwright-dir", "playwright", "Playwright checkout directory")
 	version := fs.String("version", "latest", "Playwright tag to clone (default: latest release, 'latest' also works explicitly)")

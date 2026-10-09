@@ -8,7 +8,7 @@ package patcher
 // DefaultPlaywrightVersion is the fallback when no version is given and the
 // latest release can't be resolved. It's also the version the patches are
 // validated against (go test -tags checkout ./patcher/).
-const DefaultPlaywrightVersion = "v1.60.0"
+const DefaultPlaywrightVersion = "v1.62.0"
 
 // PlaywrightVersion is kept for backwards compat, same as DefaultPlaywrightVersion.
 //

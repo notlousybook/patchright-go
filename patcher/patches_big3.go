@@ -543,16 +543,22 @@ func init() {
 						strings.TrimSpace(MustBody("patchUtilityScriptSerializers_replaceWithText_01"))+"\n    if ('v' in value)", 1)
 				}
 			}
-			// innerSerialize: f<32hex> gate (older upstream only; v1.60 has no
-			// function branch, so there is nothing to gate — skip cleanly).
+			// innerSerialize: f<32hex> gate. Matches both the constant form
+			// (value.name.startsWith(kFunctionBindingPrefix)) and older
+			// inline forms; skipped when v1.60-style has no function branch.
 			if strings.Contains(text, "value.name.startsWith") {
-				var err error
-				text, err = regexpReplace(text,
-					`typeof value === 'function' && [^)]+?value\.name\.startsWith[^)]+\)`,
+				updated, err := regexpReplace(text,
+					`typeof value === 'function' && value\.name\.startsWith\([^)]*\)`,
 					"typeof value === 'function' && /^f[0-9a-f]{32}$/.test(value.name)")
+				if err != nil {
+					updated, err = regexpReplace(text,
+						`typeof value === 'function' && [^)]+?value\.name\.startsWith[^)]+\)`,
+						"typeof value === 'function' && /^f[0-9a-f]{32}$/.test(value.name)")
+				}
 				if err != nil {
 					return fmt.Errorf("innerSerialize gate: %w", err)
 				}
+				text = updated
 			}
 			fs.Set(rel, text)
 			// oldUtilityScriptSerializers.ts: new file.
