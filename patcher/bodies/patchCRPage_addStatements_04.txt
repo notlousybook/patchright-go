@@ -1,0 +1,9 @@
+
+		for (const source of this._exposedBindingScripts) {
+			this._client._sendMayFail("Runtime.evaluate", {
+				expression: source,
+				contextId: contextPayload.id,
+				awaitPromise: true,
+			})
+		}
+	

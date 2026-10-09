@@ -1,0 +1,103 @@
+
+		if (!csp || typeof csp !== 'string')
+			return csp;
+
+		// Split by semicolons and clean up
+		const directives = csp.split(';')
+			.map(d => d.trim())
+			.filter(Boolean);
+
+		const fixedDirectives = [];
+		let hasScriptSrc = false;
+		let hasDefaultSrc = false;
+
+		const addIfMissing = (values: string[], ...items: string[]) => {
+			for (const item of items)
+				if (!values.includes(item))
+					values.push(item);
+		};
+
+
+		for (let directive of directives) {
+			// Improved directive parsing to handle more edge cases
+			const directiveMatch = directive.match(/^([a-zA-Z-]+)(?:\s+(.*))?$/);
+			if (!directiveMatch) {
+				fixedDirectives.push(directive);
+				continue;
+			}
+
+			const directiveName = directiveMatch[1].toLowerCase();
+			const directiveValues = directiveMatch[2].split(/\s+/).filter(Boolean);
+
+			switch (directiveName) {
+				case 'script-src':
+					hasScriptSrc = true;
+
+					// Add nonce if we have one and it's not already present
+					if (scriptNonce && !directiveValues.some(v => v.includes(`nonce-${scriptNonce}`)))
+						directiveValues.push(`'nonce-${scriptNonce}'`);
+
+					// Add 'unsafe-eval' if not present
+					addIfMissing(directiveValues, "'unsafe-eval'");
+
+					// Add unsafe-inline if not present and no nonce is being used
+					if (!scriptNonce)
+						addIfMissing(directiveValues, "'unsafe-inline'");
+
+					// Add wildcard for external scripts if not already present
+					if (!directiveValues.includes("*") && !directiveValues.includes("'self'") && !directiveValues.some(v => v.includes("https:")))
+						directiveValues.push("*");
+
+					fixedDirectives.push(`script-src ${directiveValues.join(' ')}`);
+					break;
+
+				case 'style-src':
+					// Add 'unsafe-inline' for styles if not present
+					addIfMissing(directiveValues, "'unsafe-inline'");
+					fixedDirectives.push(`style-src ${directiveValues.join(' ')}`);
+					break;
+
+				case 'img-src':
+				case 'font-src':
+					// Allow data: URLs for images/fonts if not already allowed
+					if (!directiveValues.includes('*'))
+						addIfMissing(directiveValues, 'data:');
+					fixedDirectives.push(`${directiveName} ${directiveValues.join(' ')}`);
+					break;
+
+				case 'connect-src':
+					// Allow WebSocket connections if not already allowed
+					if (!directiveValues.some(v => v.includes('ws:') || v.includes('wss:') || v === '*'))
+						addIfMissing(directiveValues, 'ws:', 'wss:');
+					fixedDirectives.push(`connect-src ${directiveValues.join(' ')}`);
+					break;
+
+				case 'frame-ancestors':
+					// If completely blocked with 'none', allow 'self' at least
+					let frameAncestorValues = directiveValues.includes("'none'") ? "'self'" : directiveValues.join(' ');
+					fixedDirectives.push(`frame-ancestors ${frameAncestorValues}`);
+					break;
+
+				case 'default-src':
+					hasDefaultSrc = true;
+					fixedDirectives.push(directive);
+					break;
+
+				default:
+					// Keep other directives as-is
+					fixedDirectives.push(directive);
+			}
+		}
+
+		// Add script-src for our injected scripts only when it's missing AND a
+		// default-src exists to override.
+		if (!hasScriptSrc && hasDefaultSrc) {
+			fixedDirectives.push(
+				scriptNonce
+					? `script-src 'self' 'unsafe-eval' 'nonce-${scriptNonce}' *`
+					: `script-src 'self' 'unsafe-eval' 'unsafe-inline' *`
+			);
+		}
+
+		return fixedDirectives.join('; ');
+	

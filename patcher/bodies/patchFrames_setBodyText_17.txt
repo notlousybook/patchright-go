@@ -1,0 +1,10 @@
+
+		try {
+			const context = await this._detachedScope.race(this._context(options.world ?? "utility"));
+			return await this._detachedScope.race(context.evaluateExpressionHandle(expression, options, arg));
+		} catch (e) {
+			if (e instanceof Error && (this._page.isClosedOrClosingOrCrashed() || this._page.browserContext.isClosingOrClosed() || (this._page.browserContext as any)._browser._startedClosing))
+				throw new TargetClosedError(this._page.closeReason());
+			throw e;
+		}
+	

@@ -1,0 +1,143 @@
+
+		if (options.performActionPreChecks)
+			await this._page.performActionPreChecks(progress);
+
+		const resolved = await this.selectors.resolveInjectedForSelector(
+			selector,
+			{ strict: options.strict },
+			 (options as any).__patchrightInitialScope
+		);
+
+		if (!resolved) {
+			if (returnAction === 'returnOnNotResolved' || returnAction === 'returnAll') {
+				const result = await action(null);
+				return result === "internal:continuepolling" ? continuePolling : result;
+			}
+			return continuePolling;
+		}
+
+		const utilityContext = await resolved.frame.utilityContext();
+		const mainContext = await resolved.frame.mainContext();
+		let client;
+		try {
+			client = this._page.delegate._sessionForFrame(resolved.frame)._client;
+		} catch (e) {
+			client = this._page.delegate._mainFrameSession._client;
+		}
+
+		const documentNode = await client._sendMayFail('Runtime.evaluate', {
+			expression: "document",
+			serializationOptions: { serialization: "idOnly" },
+			contextId: utilityContext.delegate._contextId,
+		});
+		if (!documentNode)
+			return continuePolling;
+
+		let initialScope = new dom.ElementHandle(utilityContext, documentNode.result.objectId);
+
+		if ((resolved as any).scope) {
+			const scopeObjectId = (resolved as any).scope._objectId;
+			if (scopeObjectId) {
+				const describeResult = await client._sendMayFail('DOM.describeNode', {
+					objectId: scopeObjectId,
+				});
+				const backendNodeId = describeResult?.node?.backendNodeId;
+
+				if (backendNodeId) {
+					const scopeInUtility = await client._sendMayFail('DOM.resolveNode', {
+						backendNodeId,
+						executionContextId: utilityContext.delegate._contextId
+					});
+
+					if (scopeInUtility?.object?.objectId) {
+						initialScope = new dom.ElementHandle(utilityContext, scopeInUtility.object.objectId);
+					}
+				}
+			}
+		}
+		(progress as any).__patchrightInitialScope = (resolved as any).scope;
+
+		// Save parsed selector before _customFindElementsByParsed mutates it via parts.shift()
+		const parsedSnapshot = (options as any).__patchrightWaitForSelector ? JSON.parse(JSON.stringify(resolved.info.parsed)) : null;
+		let currentScopingElements;
+		try {
+			currentScopingElements = await this._customFindElementsByParsed(resolved, client, mainContext, initialScope, progress, resolved.info.parsed);
+		} catch (e) {
+			if ("JSHandles can be evaluated only in the context they were created!" === e.message)
+				return continuePolling;
+			if (e instanceof TypeError && e.message.includes("is not a function"))
+				return continuePolling;
+			await progress.race(resolved.injected.evaluateHandle((injected, { error }) => { throw error }, { error: e }));
+		}
+
+		if (currentScopingElements.length === 0) {
+			if ((options as any).__testHookNoAutoWaiting || (options as any).noAutoWaiting)
+				throw new dom.NonRecoverableDOMError('Element(s) not found');
+
+			// CDP-based element search is non-atomic and can temporarily miss
+			// elements during DOM mutations. Verify element absence in-page before reporting
+			// "not found" to the waitForSelector callback.
+			if (parsedSnapshot && (returnAction === 'returnOnNotResolved' || returnAction === 'returnAll')) {
+				const elementCount = await resolved.injected.evaluate((injected, { parsed }) => {
+					return injected.querySelectorAll(parsed, document).length;
+				}, { parsed: parsedSnapshot }).catch(() => 0);
+				if (elementCount > 0)
+					return continuePolling;
+			}
+			if (returnAction === 'returnOnNotResolved' || returnAction === 'returnAll') {
+				const result = await action(null);
+				return result === "internal:continuepolling" ? continuePolling : result;
+			}
+			return continuePolling;
+		}
+
+		const resultElement = currentScopingElements[0];
+		await resultElement._initializePreview().catch(() => {});
+
+		let visibilityQualifier = '';
+		if (options && (options as any).__patchrightWaitForSelector) {
+			visibilityQualifier = await resultElement.evaluateInUtility(([injected, node]) => injected.utils.isElementVisible(node) ? 'visible' : 'hidden', {}).catch(() => '');
+		}
+
+		if (currentScopingElements.length > 1) {
+			if (resolved.info.strict) {
+				await progress.race(resolved.injected.evaluateHandle((injected, {
+					info,
+					elements
+				}) => {
+					throw injected.strictModeViolationError(info.parsed, elements);
+				}, {
+					info: resolved.info,
+					elements: currentScopingElements
+				}));
+			}
+			progress.log("  locator resolved to " + currentScopingElements.length + " elements. Proceeding with the first one: " + resultElement.preview());
+		} else if (resultElement) {
+			progress.log("  locator resolved to " + (visibilityQualifier ? visibilityQualifier + " " : "") + resultElement.preview().replace("JSHandle@", ""));
+		}
+
+		try {
+			var result = null;
+			if (returnAction === 'returnAll') {
+				result = await action([resultElement, currentScopingElements]);
+			} else {
+				result = await action(resultElement);
+			}
+			if (result === 'error:notconnected') {
+				progress.log('element was detached from the DOM, retrying');
+				return continuePolling;
+			} else if (result === 'internal:continuepolling') {
+				return continuePolling;
+			}
+			// Verify no visible elements exist before accepting a null result to avoid stale CDP handles during mutations.
+			if (parsedSnapshot && result === null && ((options as any).state === 'hidden' || (options as any).state === 'detached')) {
+				const visibleCount = await resolved.injected.evaluate((injected, { parsed }) => {
+					const elements = injected.querySelectorAll(parsed, document);
+					return elements.filter(e => injected.utils.isElementVisible(e)).length;
+				}, { parsed: parsedSnapshot }).catch(() => 0);
+				if (visibleCount > 0)
+					return continuePolling;
+			}
+			return result;
+		} finally {}
+	

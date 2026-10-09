@@ -1,0 +1,109 @@
+
+		const isTextHtml = response.headers.some((header) => header.name.toLowerCase() === "content-type" && header.value.includes("text/html"));
+		const pageDelegate = this._page?.delegate ?? null;
+		const initScriptTag = pageDelegate?.initScriptTag ?? "";
+		const allInjections = pageDelegate
+			? [...pageDelegate._mainFrameSession._evaluateOnNewDocumentScripts]
+			: [];
+
+		if (isTextHtml && allInjections.length && initScriptTag) {
+			// Decode body if needed
+			if (response.isBase64) {
+				response.isBase64 = false;
+				response.body = Buffer.from(response.body, "base64").toString("utf-8");
+			}
+
+			// CSP Detection and Fixing
+			const cspHeaderNames = ["content-security-policy", "content-security-policy-report-only"];
+			const extractNonce = (cspValue) => {
+				const match = cspValue.match(/script-src[^;]*'nonce-([^'"s;]+)'/i);
+				return match?.[1] ?? null;
+			};
+		  let useNonce = false;
+			let scriptNonce = null;
+
+			// Fix CSP in headers
+			for (const header of response.headers) {
+				if (cspHeaderNames.includes(header.name.toLowerCase())) {
+					const originalCsp = header.value ?? "";
+					// Extract nonce if present
+					const nonce = !useNonce && extractNonce(originalCsp);
+					if (nonce) {
+						scriptNonce = nonce;
+						useNonce = true;
+					}
+
+					header.value = this._fixCSP(originalCsp, scriptNonce);
+				}
+			}
+
+			// Fix CSP in meta tags
+			if (typeof response.body === "string" && response.body.length) {
+				response.body = response.body.replace(
+					/<metab[^>]*http-equiv=(?:"|')?Content-Security-Policy(?:"|')?[^>]*>/gi,
+					(match) => {
+						const contentMatch = match.match(/bcontent=(?:"|')([^"']*)(?:"|')/i);
+						if (!contentMatch)
+							return match;
+
+						let originalCsp = contentMatch[1];
+						// Decode HTML entities
+						originalCsp = originalCsp
+							.replace(/&amp;/g, '&')  // Must be first!
+							.replace(/&lt;/g, '<')
+							.replace(/&gt;/g, '>')
+							.replace(/&quot;/g, '"')
+							.replace(/&#x27;/g, "'")
+							.replace(/&#x22;/g, '"')
+							.replace(/&nbsp;/g, ' ')
+							.replace(/&#(d+);/g, (match, dec) => String.fromCharCode(dec))
+							.replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+
+						// Extract nonce if present
+						const nonce = !useNonce && extractNonce(originalCsp);
+						if (nonce) {
+							scriptNonce = nonce;
+							useNonce = true;
+						}
+
+						const fixedCsp = this._fixCSP(originalCsp, scriptNonce);
+						// Re-encode for HTML
+						const encodedCsp = fixedCsp.replace(/'/g, '&#x27;').replace(/"/g, '&#x22;');
+						return match.replace(contentMatch[1], encodedCsp);
+					}
+				);
+			}
+
+			// Build injection HTML - only use nonce if one was found in existing CSP
+			const nonceAttr = useNonce ? `nonce="${scriptNonce}"` : '';
+			let injectionHTML = "";
+			allInjections.forEach((script) => {
+				let scriptId = crypto.randomBytes(22).toString("hex");
+				let scriptSource = script.source ?? script;
+				injectionHTML += `<script class="${initScriptTag}" ${nonceAttr} id="${scriptId}" type="text/javascript">document.getElementById("${scriptId}")?.remove();${scriptSource}</script>`;
+			});
+
+			// Inject at END of <head>
+			response.body = this._injectIntoHead(response.body, injectionHTML);
+		}
+
+		this._fulfilled = true;
+		const body = response.isBase64 ? response.body : Buffer.from(response.body).toString("base64");
+		const responseHeaders = splitSetCookieHeader(response.headers);
+		this._fulfilledSetCookieHeaders = responseHeaders.filter(header => header.name.toLowerCase() === 'set-cookie');
+		if (!this._page)
+			this._fulfilledResponse = {
+				status: response.status,
+				statusText: network.statusText(response.status),
+				headers: headersArrayToObject(responseHeaders),
+			};
+		await catchDisallowedErrors(async () => {
+			await this._session.send("Fetch.fulfillRequest", {
+				requestId: response.interceptionId ? response.interceptionId : this._interceptionId,
+				responseCode: response.status,
+				responsePhrase: network.statusText(response.status),
+				responseHeaders,
+				body
+			});
+		});
+	

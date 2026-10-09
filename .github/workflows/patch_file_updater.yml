@@ -1,0 +1,47 @@
+name: Patchright Driver .Patch File Updater
+
+on:
+  push:
+    branches:
+      - "main"
+
+jobs:
+  patch-file-updater:
+    name: "Patchright Driver .Patch File Updater: Create and Commit Patch File Comparing"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      - name: Configure Fast APT Mirror
+        uses: vegardit/fast-apt-mirror.sh@v1
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Get Commit Author and Message
+        id: get_commit_info
+        run: |
+          AUTHOR=$(git log -1 --pretty=format:'%an')
+          COMMIT_MESSAGE=$(git log -1 --pretty=format:'%s')
+          echo "author=$AUTHOR" >> $GITHUB_OUTPUT
+          echo "commit_message=$COMMIT_MESSAGE" >> $GITHUB_OUTPUT
+
+      - name: Skip if Commit is from GitHub Actions
+        if: contains(steps.get_commit_info.outputs.author, 'github-actions')
+        run: echo "Skipping action as the commit is from github-actions" && exit 0
+
+      - name: Create Documentation Patch File
+        run: go run ./cmd/patchright diff-patch --playwright-dir playwright --output patchright.patch
+
+      - name: Commit and Push Patch File
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "[Patch-Comparison] Automatic Commit: ${{ steps.get_commit_info.outputs.commit_message }}"
+          branch: "main"
+          file_pattern: "patchright.patch"
+          skip_fetch: true

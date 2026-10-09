@@ -1,0 +1,108 @@
+
+		if ((options as any).visibility)
+			throw new Error('options.visibility is not supported, did you mean options.state?');
+		if ((options as any).waitFor && (options as any).waitFor !== 'visible')
+			throw new Error('options.waitFor is not supported, did you mean options.state?');
+		const { state = 'visible' } = options;
+		if (!['attached', 'detached', 'visible', 'hidden'].includes(state))
+			throw new Error(`state: expected one of (attached|detached|visible|hidden)`);
+		if (performActionPreChecksAndLog)
+			progress.log(`waiting for ${this._asLocator(selector)}${state === 'attached' ? '' : ' to be ' + state}`);
+		const promise = this.retryWithProgressAndBackoff(progress, async (progress, continuePolling) => {
+			if (performActionPreChecksAndLog)
+				await this._page.performActionPreChecks(progress);
+			const resolved = await progress.race(this.selectors.resolveInjectedForSelector(selector, options, scope));
+			if (!resolved) {
+				if (state === 'hidden' || state === 'detached')
+					return null;
+				return continuePolling;
+			}
+			if ((state === 'hidden' || state === 'detached') && resolved.frame._isDetached())
+				return null;
+			let result;
+			try {
+				result = await progress.race(resolved.injected.evaluateHandle((injected, { info, root, state }) => {
+				if (root && !root.isConnected) {
+					if (state === 'hidden' || state === 'detached')
+						return { log: '', element: undefined, visible: false, attached: false };
+					throw injected.createStacklessError('Element is not attached to the DOM');
+				}
+				const elements = injected.querySelectorAll(info.parsed, root || document);
+				const element = elements[0];
+				const visible = element ? injected.utils.isElementVisible(element) : false;
+				let log = '';
+				if (elements.length > 1) {
+					if (info.strict)
+						throw injected.strictModeViolationError(info.parsed, elements);
+					log = "  locator resolved to " + elements.length + " elements. Proceeding with the first one: " + injected.previewNode(elements[0]);
+				} else if (element) {
+					log = "  locator resolved to " + (visible ? 'visible' : 'hidden') + " " + injected.previewNode(element);
+				}
+				injected.checkDeprecatedSelectorUsage(info.parsed, elements);
+				return { log, element, visible, attached: !!element };
+				}, { info: resolved.info, root: resolved.frame === this ? scope : undefined, state }));
+			} catch (e) {
+				if ((state === 'hidden' || state === 'detached') && resolved.frame._isDetached())
+					return null;
+				throw e;
+			}
+			const { log, visible, attached } = await progress.race(result.evaluate(r => ({ log: r.log, visible: r.visible, attached: r.attached })));
+			if (log)
+				progress.log(log);
+			const success = { attached, detached: !attached, visible, hidden: !visible }[state];
+			if (!success) {
+				result.dispose();
+				if ((state === 'attached' || state === 'visible') && !attached) {
+					const fallbackResult = await this._retryWithoutProgress(progress, selector, { ...options, state, performActionPreChecks: false, __patchrightWaitForSelector: true, __patchrightInitialScope: scope } as any, async (handle) => {
+						if (!handle)
+							return "internal:continuepolling";
+						const visible = state === 'visible' ? await handle.evaluateInUtility(([injected, node]) => injected.utils.isElementVisible(node), {}).catch(() => false) : true;
+						if (!visible)
+							return "internal:continuepolling";
+						if (options.omitReturnValue)
+							return null;
+						if ((options as any).__testHookBeforeAdoptNode)
+							await progress.race((options as any).__testHookBeforeAdoptNode());
+						try {
+							const mainContext = await progress.race(handle._frame.mainContext());
+							return await progress.race(handle._adoptTo(mainContext));
+						} catch (e) {
+							return "internal:continuepolling";
+						}
+					}, 'returnOnNotResolved', continuePolling);
+					if (fallbackResult !== continuePolling)
+						return fallbackResult;
+				}
+				return continuePolling;
+			}
+			if (options.omitReturnValue) {
+				result.dispose();
+				return null;
+			}
+			const element = state === 'attached' || state === 'visible' ? await progress.race(result.evaluateHandle(r => r.element)) : null;
+			result.dispose();
+			if (!element)
+				return null;
+			if ((options as any).__testHookBeforeAdoptNode)
+				await progress.race((options as any).__testHookBeforeAdoptNode());
+			try {
+				const mainContext = await progress.race(resolved.frame.mainContext());
+				return await progress.race(element._adoptTo(mainContext));
+			} catch (e) {
+				return continuePolling;
+			}
+		});
+		if (!scope)
+			return promise;
+		const onNavigation = new ManualPromise<never>();
+		const navigationListener = (event: NavigationEvent) => {
+			if (event.newDocument)
+				onNavigation.reject(new Error('Execution context was destroyed, most likely because of a navigation'));
+		};
+		this.on(Frame.Events.InternalNavigation, navigationListener);
+		try {
+			return await scope._context.raceAgainstContextDestroyed(Promise.race([promise, onNavigation]));
+		} finally {
+			this.off(Frame.Events.InternalNavigation, navigationListener);
+		}
+	

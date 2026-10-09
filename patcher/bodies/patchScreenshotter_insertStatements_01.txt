@@ -1,0 +1,5 @@
+
+			await Promise.all(this._page.frames().map(async (f: any) => {
+				try { await f.utilityContext(); } catch {}
+			}));
+		

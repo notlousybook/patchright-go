@@ -1,0 +1,1 @@
+params.elements || ${elementsDeclaration.getInitializerOrThrow().getText()}

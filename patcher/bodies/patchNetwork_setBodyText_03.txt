@@ -1,0 +1,7 @@
+
+		const headers = await this._actualHeaders();
+		const page = this._safePage();
+		if (page?._closeWasCalled)
+			throw new TargetClosedError();
+		return headers.headers();
+	

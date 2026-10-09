@@ -1,0 +1,6 @@
+
+		const rawHeaders = headers || this._headers;
+		this._rawRequestHeaders = rawHeaders;
+		if (!this._rawRequestHeadersPromise.isDone())
+			this._rawRequestHeadersPromise.resolve(rawHeaders);
+	

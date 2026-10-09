@@ -1,0 +1,18 @@
+
+		if (context) {
+			await this._page.onBindingCalled(event.payload, context);
+		} else {
+			// Ensure execution contexts for all frames are resolved/created
+			await Promise.all(this._page.frames().map(frame => frame.mainContext().catch(() => null)));
+			const fallbackContext = this._contextIdToContext.get(event.executionContextId);
+			if (fallbackContext) {
+				await this._page.onBindingCalled(event.payload, fallbackContext);
+			} else {
+				// Last resort fallback
+				const mainCtx = await this._page.mainFrame().mainContext().catch(() => null);
+				if (mainCtx) {
+					await this._page.onBindingCalled(event.payload, mainCtx);
+				}
+			}
+		}
+	

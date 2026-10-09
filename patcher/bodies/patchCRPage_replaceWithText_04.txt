@@ -1,0 +1,5 @@
+
+					  for (const binding of this._crPage._page.allBindings()) promises.push(this._initBinding(binding));
+					  for (const initScript of this._crPage._browserContext.initScripts) promises.push(this._evaluateOnNewDocument(initScript, 'main'));
+					  for (const initScript of this._crPage._page.initScripts) promises.push(this._evaluateOnNewDocument(initScript, 'main'));
+				

@@ -1,0 +1,12 @@
+
+		const fulfilledResponse = this._serviceWorker && request._originalRequestRoute?._fulfilledResponse;
+		if (!response && fulfilledResponse) {
+			response = this._createResponse(request, {
+				...fulfilledResponse,
+				url: request.request.url(),
+				mimeType: '', charset: '', connectionReused: false, connectionId: 0,
+				encodedDataLength: event.encodedDataLength, securityState: 'unknown',
+			}, false);
+			this._serviceWorker!.requestReceivedResponse(response);
+		}
+	

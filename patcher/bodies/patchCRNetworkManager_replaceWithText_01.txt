@@ -1,0 +1,1 @@
+new RouteImpl(requestPausedSessionInfo!.session, requestPausedEvent.requestId, this._page, requestPausedEvent.networkId ?? requestPausedEvent.requestId, this)

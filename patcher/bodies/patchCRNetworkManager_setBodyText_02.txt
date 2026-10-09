@@ -1,0 +1,68 @@
+
+		// Inject at END of <head>
+		const lower = body.toLowerCase();
+		const headStartIndex = lower.indexOf("<head");
+
+		if (headStartIndex !== -1) {
+			const headStartTagEndIndex = lower.indexOf(">", headStartIndex) + 1;
+			const headEndTagIndex = lower.indexOf("</head>", headStartIndex);
+
+			if (headEndTagIndex !== -1) {
+				// Find the first <script> tag in <head>, skipping HTML comments
+				const headContent = lower.slice(headStartTagEndIndex, headEndTagIndex);
+
+				// Look for the first <script> tag in the head content but ignore comments
+				let firstScriptIndex = -1;
+				let searchPos = 0;
+
+				while (searchPos < headContent.length) {
+					const commentStart = headContent.indexOf("<!--", searchPos);
+					const scriptStart = headContent.indexOf("<script", searchPos);
+
+					// No more script tags, inject at the end of head content
+					if (scriptStart === -1)
+						break;
+
+					if (commentStart !== -1 && commentStart < scriptStart) {
+						const commentEnd = headContent.indexOf("-->", commentStart);
+						if (commentEnd === -1)
+							break;
+
+						// Skip past the comment and keep searching
+						searchPos = commentEnd + 3;
+					} else {
+					  // Found a script tag outside a comment
+						firstScriptIndex = scriptStart;
+						break;
+					}
+				}
+
+				const insertAt =
+					firstScriptIndex !== -1
+						? headStartTagEndIndex + firstScriptIndex   // Before first <script>
+						: headEndTagIndex;                   		 // Before </head>
+
+				return body.slice(0, insertAt) + injectionHTML + body.slice(insertAt);
+			}
+
+			// No </head> found — inject right after the opening <head> tag
+			return body.slice(0, headStartTagEndIndex) + injectionHTML + body.slice(headStartTagEndIndex);
+		}
+
+		// No <head> — try after <!DOCTYPE>
+		const doctypeIndex = lower.indexOf("<!doctype");
+		if (doctypeIndex === 0) {
+			const doctypeEnd = body.indexOf(">", doctypeIndex) + 1;
+			return body.slice(0, doctypeEnd) + injectionHTML + body.slice(doctypeEnd);
+		}
+
+		// Try after <html>
+		const htmlTagIndex = lower.indexOf("<html");
+		if (htmlTagIndex !== -1) {
+			const htmlTagEnd = body.indexOf(">", htmlTagIndex) + 1;
+			return body.slice(0, htmlTagEnd) +  `<head>${injectionHTML}</head>` + body.slice(htmlTagEnd);
+		}
+
+		// Last resort — prepend to body
+		return injectionHTML + body;
+	

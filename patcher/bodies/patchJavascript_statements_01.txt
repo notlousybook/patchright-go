@@ -1,0 +1,10 @@
+
+			const utilityScript = await this._utilityScript();
+			const callback = await utilityScript.evaluateHandle((utilityScript: any, name) => utilityScript.takeFunctionCallback(name), name);
+			if (callback._objectId)
+				return [callback];
+			callback.dispose();
+			if (!this.delegate.findFunctions)
+				return [];
+			return this.raceAgainstContextDestroyed(this.delegate.findFunctions(this, name));
+		

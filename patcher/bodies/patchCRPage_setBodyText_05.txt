@@ -1,0 +1,12 @@
+
+		const frame = this._page.frameManager.frame(frameId);
+		if (!frame)
+			return true;
+		let session: FrameSession;
+		try {
+			session = this._crPage._sessionForFrame(frame);
+		} catch {
+			return true;
+		}
+		return session && session !== this && !session._swappedIn;
+	

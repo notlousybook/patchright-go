@@ -1,0 +1,93 @@
+name: Build Test Package on PR
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency: # Make sure only one approval check runs at a time for the same PR, so the pull_request workflow doesnt fail after a review is submitted
+  group: approval-check-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  build-package:
+    name: "​" # NOTE: Were using a zero-width space to save some visual clutter in the GitHub Pull Request UI
+    if: github.event.pull_request.draft == false # Only run if the PR is not a draft
+
+    runs-on: ubuntu-latest
+
+    # Manual approval gate: configure this environment in repo settings with "Required reviewers".
+    environment:
+      name: pr-artifact-build
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      - name: Configure Fast APT Mirror
+        uses: vegardit/fast-apt-mirror.sh@v1
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Setup Node v24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Go Unit Tests
+        run: go test ./...
+
+      - name: Check Release Version
+        id: version_check
+        run: go run ./cmd/patchright version-check --repo ${{ github.repository }}
+
+      - name: Stop When Playwright Version Is Unavailable
+        if: steps.version_check.outputs.playwright_version == 'v0.0.0'
+        run: |
+          echo "GitHub API did not return a valid Playwright release tag."
+          exit 1
+
+      - name: Patch Playwright Driver
+        run: |
+          go run ./cmd/patchright patch --playwright-dir playwright --version ${{ steps.version_check.outputs.playwright_version }}
+          cd playwright
+          npm ci
+
+      - name: Validate Patches Against Checkout
+        run: go test -tags checkout ./patcher/
+
+      - name: Generate Playwright Channels
+        # Ignore the error exit code, as the script exits 1 when a file is modified.
+        continue-on-error: true
+        run: |
+          cd playwright
+          node utils/generate_channels.js
+
+      - name: Build Patchright Packages
+        run: |
+          cd playwright
+          npm run build
+
+      - name: Rebrand Patchright Packages
+        run: go run ./cmd/patchright rebrand --playwright-dir playwright
+
+      - name: Pack Patchright Packages
+        run: |
+          mkdir -p artifacts
+          npm pack ./playwright/packages/patchright-core --pack-destination artifacts
+          npm pack ./playwright/packages/patchright --pack-destination artifacts
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v6
+        id: upload_build_artifacts
+        with:
+          name: patchright-packages
+          path: artifacts/*.tgz

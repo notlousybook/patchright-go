@@ -1,0 +1,1362 @@
+[
+  {
+    "sourceFile": "browserContextPatch.ts",
+    "patchFunc": "patchBrowserContext",
+    "callKind": "insertStatements",
+    "bodyFile": "patchBrowserContext_insertStatements_01.txt",
+    "chars": 88,
+    "contextSymbols": [
+      "initialize",
+      "exposeBinding",
+      "removeExposedBinding"
+    ]
+  },
+  {
+    "sourceFile": "browserContextPatch.ts",
+    "patchFunc": "patchBrowserContext",
+    "callKind": "setBodyText",
+    "bodyFile": "patchBrowserContext_setBodyText_01.txt",
+    "chars": 404,
+    "contextSymbols": [
+      "exposeBinding",
+      "exposeFunction",
+      "installInjectRoute"
+    ]
+  },
+  {
+    "sourceFile": "browserContextDispatcherPatch.ts",
+    "patchFunc": "patchBrowserContextDispatcher",
+    "callKind": "replaceWithText",
+    "bodyFile": "patchBrowserContextDispatcher_replaceWithText_01.txt",
+    "chars": 141,
+    "contextSymbols": [
+      "BrowserContextDispatcher"
+    ]
+  },
+  {
+    "sourceFile": "crBrowserPatch.ts",
+    "patchFunc": "patchCRBrowser",
+    "callKind": "setBodyText",
+    "bodyFile": "patchCRBrowser_setBodyText_01.txt",
+    "chars": 104,
+    "contextSymbols": [
+      "packages/playwright-core/src/server/chromium/crBrowser.ts",
+      "CRBrowserContext",
+      "doRemoveInitScripts"
+    ]
+  },
+  {
+    "sourceFile": "crBrowserPatch.ts",
+    "patchFunc": "patchCRBrowser",
+    "callKind": "setBodyText",
+    "bodyFile": "patchCRBrowser_setBodyText_02.txt",
+    "chars": 96,
+    "contextSymbols": [
+      "CRBrowserContext",
+      "doRemoveInitScripts",
+      "doExposeBinding"
+    ]
+  },
+  {
+    "sourceFile": "crBrowserPatch.ts",
+    "patchFunc": "patchCRBrowser",
+    "callKind": "setBodyText",
+    "bodyFile": "patchCRBrowser_setBodyText_03.txt",
+    "chars": 97,
+    "contextSymbols": [
+      "doRemoveInitScripts",
+      "doExposeBinding",
+      "doRemoveExposedBindings"
+    ]
+  },
+  {
+    "sourceFile": "crExecutionContextPatch.ts",
+    "patchFunc": "patchCRExecutionContext",
+    "callKind": "statements",
+    "bodyFile": "patchCRExecutionContext_statements_01.txt",
+    "chars": 2290,
+    "contextSymbols": [
+      "CRExecutionContext"
+    ]
+  },
+  {
+    "sourceFile": "crNetworkManagerPatch.ts",
+    "patchFunc": "patchCRNetworkManager",
+    "callKind": "addStatements",
+    "bodyFile": "patchCRNetworkManager_addStatements_01.txt",
+    "chars": 167,
+    "contextSymbols": [
+      "removeSession",
+      "_onRequest",
+      "setRequestInterception"
+    ]
+  },
+  {
+    "sourceFile": "crNetworkManagerPatch.ts",
+    "patchFunc": "patchCRNetworkManager",
+    "callKind": "addStatements",
+    "bodyFile": "patchCRNetworkManager_addStatements_02.txt",
+    "chars": 315,
+    "contextSymbols": [
+      "_onRequest",
+      "_onRequestPaused",
+      "_onRequestServedFromCache"
+    ]
+  },
+  {
+    "sourceFile": "crNetworkManagerPatch.ts",
+    "patchFunc": "patchCRNetworkManager",
+    "callKind": "insertStatements",
+    "bodyFile": "patchCRNetworkManager_insertStatements_01.txt",
+    "chars": 92,
+    "contextSymbols": [
+      "_onRequest",
+      "setRequestInterception",
+      "_onRequest"
+    ]
+  },
+  {
+    "sourceFile": "crNetworkManagerPatch.ts",
+    "patchFunc": "patchCRNetworkManager",
+    "callKind": "insertStatements",
+    "bodyFile": "patchCRNetworkManager_insertStatements_02.txt",
+    "chars": 245,
+    "contextSymbols": [
+      "_onRequest",
+      "setRequestInterception",
+      "_onRequest"
+    ]
+  },
+  {
+    "sourceFile": "crNetworkManagerPatch.ts",
+    "patchFunc": "patchCRNetworkManager",
+    "callKind": "insertStatements",
+    "bodyFile": "patchCRNetworkManager_insertStatements_03.txt",
+    "chars": 179,
+    "contextSymbols": [
+      "setRequestInterception",
+      "_onRequest",
+      "_onRequestPaused"
+    ]
+  },
+  {
+    "sourceFile": "crNetworkManagerPatch.ts",
+    "patchFunc": "patchCRNetworkManager",
+    "callKind": "insertStatements",
+    "bodyFile": "patchCRNetworkManager_insertStatements_04.txt",
+    "chars": 350,
+    "contextSymbols": [
+      "_injectIntoHead",
+      "fulfill",
+      "_createResponse"
+    ]
+  },
+  {
+    "sourceFile": "crNetworkManagerPatch.ts",
+    "patchFunc": "patchCRNetworkManager",
+    "callKind": "insertStatements",
+    "bodyFile": "patchCRNetworkManager_insertStatements_05.txt",
+    "chars": 472,
+    "contextSymbols": [
+      "_createResponse",
+      "_onLoadingFinished",
+      "response"
+    ]
+  },
+  {
+    "sourceFile": "crNetworkManagerPatch.ts",
+    "patchFunc": "patchCRNetworkManager",
+    "callKind": "insertStatements",
+    "bodyFile": "patchCRNetworkManager_insertStatements_06.txt",
+    "chars": 94,
+    "contextSymbols": [
+      "_createResponse",
+      "_onLoadingFinished",
+      "response"
+    ]
+  },
+  {
+    "sourceFile": "crNetworkManagerPatch.ts",
+    "patchFunc": "patchCRNetworkManager",
+    "callKind": "replaceWithText",
+    "bodyFile": "patchCRNetworkManager_replaceWithText_01.txt",
+    "chars": 158,
+    "contextSymbols": [
+      "CRNetworkManager",
+      "removeSession",
+      "_onRequest"
+    ]
+  },
+  {
+    "sourceFile": "crNetworkManagerPatch.ts",
+    "patchFunc": "patchCRNetworkManager",
+    "callKind": "replaceWithText",
+    "bodyFile": "patchCRNetworkManager_replaceWithText_02.txt",
+    "chars": 300,
+    "contextSymbols": [
+      "CRNetworkManager",
+      "removeSession",
+      "_onRequest"
+    ]
+  },
+  {
+    "sourceFile": "crNetworkManagerPatch.ts",
+    "patchFunc": "patchCRNetworkManager",
+    "callKind": "replaceWithText",
+    "bodyFile": "patchCRNetworkManager_replaceWithText_03.txt",
+    "chars": 242,
+    "contextSymbols": [
+      "_onRequest",
+      "setRequestInterception",
+      "_onRequest"
+    ]
+  },
+  {
+    "sourceFile": "crNetworkManagerPatch.ts",
+    "patchFunc": "patchCRNetworkManager",
+    "callKind": "setBodyText",
+    "bodyFile": "patchCRNetworkManager_setBodyText_01.txt",
+    "chars": 3300,
+    "contextSymbols": [
+      "RouteImpl",
+      "_fulfilled",
+      "_fixCSP"
+    ]
+  },
+  {
+    "sourceFile": "crNetworkManagerPatch.ts",
+    "patchFunc": "patchCRNetworkManager",
+    "callKind": "setBodyText",
+    "bodyFile": "patchCRNetworkManager_setBodyText_02.txt",
+    "chars": 2297,
+    "contextSymbols": [
+      "_fulfilled",
+      "_fixCSP",
+      "_injectIntoHead"
+    ]
+  },
+  {
+    "sourceFile": "crNetworkManagerPatch.ts",
+    "patchFunc": "patchCRNetworkManager",
+    "callKind": "setBodyText",
+    "bodyFile": "patchCRNetworkManager_setBodyText_03.txt",
+    "chars": 4059,
+    "contextSymbols": [
+      "_fixCSP",
+      "_injectIntoHead",
+      "fulfill"
+    ]
+  },
+  {
+    "sourceFile": "crNetworkManagerPatch.ts",
+    "patchFunc": "patchCRNetworkManager",
+    "callKind": "setBodyText",
+    "bodyFile": "patchCRNetworkManager_setBodyText_04.txt",
+    "chars": 882,
+    "contextSymbols": [
+      "_onLoadingFinished",
+      "response",
+      "continue"
+    ]
+  },
+  {
+    "sourceFile": "crNetworkManagerPatch.ts",
+    "patchFunc": "patchCRNetworkManager",
+    "callKind": "setBodyText",
+    "bodyFile": "patchCRNetworkManager_setBodyText_05.txt",
+    "chars": 1293,
+    "contextSymbols": [
+      "response",
+      "continue",
+      "_networkRequestIntercepted"
+    ]
+  },
+  {
+    "sourceFile": "crPagePatch.ts",
+    "patchFunc": "patchCRPage",
+    "callKind": "addStatements",
+    "bodyFile": "patchCRPage_addStatements_01.txt",
+    "chars": 34,
+    "contextSymbols": [
+      "FrameSession",
+      "_initialize",
+      "promises"
+    ]
+  },
+  {
+    "sourceFile": "crPagePatch.ts",
+    "patchFunc": "patchCRPage",
+    "callKind": "addStatements",
+    "bodyFile": "patchCRPage_addStatements_02.txt",
+    "chars": 643,
+    "contextSymbols": [
+      "_initBinding",
+      "_removeExposedBindings",
+      "_onLifecycleEvent"
+    ]
+  },
+  {
+    "sourceFile": "crPagePatch.ts",
+    "patchFunc": "patchCRPage",
+    "callKind": "addStatements",
+    "bodyFile": "patchCRPage_addStatements_03.txt",
+    "chars": 1244,
+    "contextSymbols": [
+      "_onLifecycleEvent",
+      "_eventBelongsToStaleFrame",
+      "_onFrameNavigated"
+    ]
+  },
+  {
+    "sourceFile": "crPagePatch.ts",
+    "patchFunc": "patchCRPage",
+    "callKind": "addStatements",
+    "bodyFile": "patchCRPage_addStatements_04.txt",
+    "chars": 199,
+    "contextSymbols": [
+      "_eventBelongsToStaleFrame",
+      "_onFrameNavigated",
+      "_onExecutionContextCreated"
+    ]
+  },
+  {
+    "sourceFile": "crPagePatch.ts",
+    "patchFunc": "patchCRPage",
+    "callKind": "insertStatements",
+    "bodyFile": "patchCRPage_insertStatements_01.txt",
+    "chars": 599,
+    "contextSymbols": [
+      "_sessionForFrame",
+      "FrameSession",
+      "_initialize"
+    ]
+  },
+  {
+    "sourceFile": "crPagePatch.ts",
+    "patchFunc": "patchCRPage",
+    "callKind": "insertStatements",
+    "bodyFile": "patchCRPage_insertStatements_02.txt",
+    "chars": 86,
+    "contextSymbols": [
+      "FrameSession",
+      "_initialize",
+      "promises"
+    ]
+  },
+  {
+    "sourceFile": "crPagePatch.ts",
+    "patchFunc": "patchCRPage",
+    "callKind": "insertStatements",
+    "bodyFile": "patchCRPage_insertStatements_03.txt",
+    "chars": 386,
+    "contextSymbols": [
+      "FrameSession",
+      "_initialize",
+      "promises"
+    ]
+  },
+  {
+    "sourceFile": "crPagePatch.ts",
+    "patchFunc": "patchCRPage",
+    "callKind": "insertStatements",
+    "bodyFile": "patchCRPage_insertStatements_04.txt",
+    "chars": 123,
+    "contextSymbols": [
+      "_initialize",
+      "promises",
+      "_onDialog"
+    ]
+  },
+  {
+    "sourceFile": "crPagePatch.ts",
+    "patchFunc": "patchCRPage",
+    "callKind": "insertStatements",
+    "bodyFile": "patchCRPage_insertStatements_05.txt",
+    "chars": 157,
+    "contextSymbols": [
+      "_eventBelongsToStaleFrame",
+      "_onFrameNavigated",
+      "_onExecutionContextCreated"
+    ]
+  },
+  {
+    "sourceFile": "crPagePatch.ts",
+    "patchFunc": "patchCRPage",
+    "callKind": "insertStatements",
+    "bodyFile": "patchCRPage_insertStatements_06.txt",
+    "chars": 98,
+    "contextSymbols": [
+      "_eventBelongsToStaleFrame",
+      "_onFrameNavigated",
+      "_onExecutionContextCreated"
+    ]
+  },
+  {
+    "sourceFile": "crPagePatch.ts",
+    "patchFunc": "patchCRPage",
+    "callKind": "insertStatements",
+    "bodyFile": "patchCRPage_insertStatements_07.txt",
+    "chars": 509,
+    "contextSymbols": [
+      "_onFrameNavigated",
+      "_onExecutionContextCreated",
+      "_onAttachedToTarget"
+    ]
+  },
+  {
+    "sourceFile": "crPagePatch.ts",
+    "patchFunc": "patchCRPage",
+    "callKind": "replaceWithText",
+    "bodyFile": "patchCRPage_replaceWithText_01.txt",
+    "chars": 118,
+    "contextSymbols": [
+      "packages/playwright-core/src/server/chromium/crPage.ts",
+      "CRPage"
+    ]
+  },
+  {
+    "sourceFile": "crPagePatch.ts",
+    "patchFunc": "patchCRPage",
+    "callKind": "replaceWithText",
+    "bodyFile": "patchCRPage_replaceWithText_02.txt",
+    "chars": 178,
+    "contextSymbols": [
+      "FrameSession",
+      "_initialize",
+      "promises"
+    ]
+  },
+  {
+    "sourceFile": "crPagePatch.ts",
+    "patchFunc": "patchCRPage",
+    "callKind": "replaceWithText",
+    "bodyFile": "patchCRPage_replaceWithText_03.txt",
+    "chars": 274,
+    "contextSymbols": [
+      "FrameSession",
+      "_initialize",
+      "promises"
+    ]
+  },
+  {
+    "sourceFile": "crPagePatch.ts",
+    "patchFunc": "patchCRPage",
+    "callKind": "replaceWithText",
+    "bodyFile": "patchCRPage_replaceWithText_04.txt",
+    "chars": 377,
+    "contextSymbols": [
+      "FrameSession",
+      "_initialize",
+      "promises"
+    ]
+  },
+  {
+    "sourceFile": "crPagePatch.ts",
+    "patchFunc": "patchCRPage",
+    "callKind": "replaceWithText",
+    "bodyFile": "patchCRPage_replaceWithText_05.txt",
+    "chars": 117,
+    "contextSymbols": [
+      "_eventBelongsToStaleFrame",
+      "_onFrameNavigated",
+      "_onExecutionContextCreated"
+    ]
+  },
+  {
+    "sourceFile": "crPagePatch.ts",
+    "patchFunc": "patchCRPage",
+    "callKind": "replaceWithText",
+    "bodyFile": "patchCRPage_replaceWithText_06.txt",
+    "chars": 652,
+    "contextSymbols": [
+      "_onExecutionContextCreated",
+      "_onAttachedToTarget",
+      "_onBindingCalled"
+    ]
+  },
+  {
+    "sourceFile": "crPagePatch.ts",
+    "patchFunc": "patchCRPage",
+    "callKind": "setBodyText",
+    "bodyFile": "patchCRPage_setBodyText_01.txt",
+    "chars": 222,
+    "contextSymbols": [
+      "packages/playwright-core/src/server/chromium/crPage.ts",
+      "CRPage",
+      "exposeBinding"
+    ]
+  },
+  {
+    "sourceFile": "crPagePatch.ts",
+    "patchFunc": "patchCRPage",
+    "callKind": "setBodyText",
+    "bodyFile": "patchCRPage_setBodyText_02.txt",
+    "chars": 78,
+    "contextSymbols": [
+      "CRPage",
+      "exposeBinding",
+      "removeExposedBindings"
+    ]
+  },
+  {
+    "sourceFile": "crPagePatch.ts",
+    "patchFunc": "patchCRPage",
+    "callKind": "setBodyText",
+    "bodyFile": "patchCRPage_setBodyText_03.txt",
+    "chars": 749,
+    "contextSymbols": [
+      "_onDialog",
+      "_onDialog",
+      "_initBinding"
+    ]
+  },
+  {
+    "sourceFile": "crPagePatch.ts",
+    "patchFunc": "patchCRPage",
+    "callKind": "setBodyText",
+    "bodyFile": "patchCRPage_setBodyText_04.txt",
+    "chars": 317,
+    "contextSymbols": [
+      "_onDialog",
+      "_initBinding",
+      "_removeExposedBindings"
+    ]
+  },
+  {
+    "sourceFile": "crPagePatch.ts",
+    "patchFunc": "patchCRPage",
+    "callKind": "setBodyText",
+    "bodyFile": "patchCRPage_setBodyText_05.txt",
+    "chars": 269,
+    "contextSymbols": [
+      "_removeExposedBindings",
+      "_onLifecycleEvent",
+      "_eventBelongsToStaleFrame"
+    ]
+  },
+  {
+    "sourceFile": "crPagePatch.ts",
+    "patchFunc": "patchCRPage",
+    "callKind": "setBodyText",
+    "bodyFile": "patchCRPage_setBodyText_06.txt",
+    "chars": 291,
+    "contextSymbols": [
+      "_onAttachedToTarget",
+      "_onBindingCalled",
+      "_evaluateOnNewDocument"
+    ]
+  },
+  {
+    "sourceFile": "crPagePatch.ts",
+    "patchFunc": "patchCRPage",
+    "callKind": "setBodyText",
+    "bodyFile": "patchCRPage_setBodyText_07.txt",
+    "chars": 493,
+    "contextSymbols": [
+      "_onBindingCalled",
+      "_evaluateOnNewDocument",
+      "_removeEvaluatesOnNewDocument"
+    ]
+  },
+  {
+    "sourceFile": "crServiceWorkerPatch.ts",
+    "patchFunc": "patchCRServiceWorker",
+    "callKind": "addStatements",
+    "bodyFile": "patchCRServiceWorker_addStatements_01.txt",
+    "chars": 505,
+    "contextSymbols": [
+      "CRServiceWorker"
+    ]
+  },
+  {
+    "sourceFile": "clientHelperPatch.ts",
+    "patchFunc": "patchClientHelper",
+    "callKind": "setBodyText",
+    "bodyFile": "patchClientHelper_setBodyText_01.txt",
+    "chars": 648,
+    "contextSymbols": [
+      "packages/playwright-core/src/client/clientHelper.ts"
+    ]
+  },
+  {
+    "sourceFile": "clockPatch.ts",
+    "patchFunc": "patchClock",
+    "callKind": "insertStatements",
+    "bodyFile": "patchClock_insertStatements_01.txt",
+    "chars": 242,
+    "contextSymbols": [
+      "Clock",
+      "_installIfNeeded",
+      "_evaluateInFrames"
+    ]
+  },
+  {
+    "sourceFile": "clockPatch.ts",
+    "patchFunc": "patchClock",
+    "callKind": "replaceWithText",
+    "bodyFile": "patchClock_replaceWithText_01.txt",
+    "chars": 334,
+    "contextSymbols": [
+      "packages/playwright-core/src/server/clock.ts",
+      "Clock",
+      "_installIfNeeded"
+    ]
+  },
+  {
+    "sourceFile": "credentialsPatch.ts",
+    "patchFunc": "patchCredentials",
+    "callKind": "setInitializer",
+    "bodyFile": "patchCredentials_setInitializer_01.txt",
+    "chars": 313,
+    "contextSymbols": [
+      "Credentials",
+      "install",
+      "script"
+    ]
+  },
+  {
+    "sourceFile": "framePatch.ts",
+    "patchFunc": "patchFrame",
+    "callKind": "setBodyText",
+    "bodyFile": "patchFrame_setBodyText_01.txt",
+    "chars": 480,
+    "contextSymbols": [
+      "packages/playwright-core/src/client/frame.ts",
+      "Frame",
+      "waitForURL"
+    ]
+  },
+  {
+    "sourceFile": "frameDispatcherPatch.ts",
+    "patchFunc": "patchFrameDispatcher",
+    "callKind": "setBodyText",
+    "bodyFile": "patchFrameDispatcher_setBodyText_01.txt",
+    "chars": 296,
+    "contextSymbols": [
+      "FrameDispatcher",
+      "evaluateExpression"
+    ]
+  },
+  {
+    "sourceFile": "frameDispatcherPatch.ts",
+    "patchFunc": "patchFrameDispatcher",
+    "callKind": "setBodyText",
+    "bodyFile": "patchFrameDispatcher_setBodyText_02.txt",
+    "chars": 343,
+    "contextSymbols": [
+      "FrameDispatcher",
+      "evaluateExpression",
+      "evaluateExpressionHandle"
+    ]
+  },
+  {
+    "sourceFile": "frameDispatcherPatch.ts",
+    "patchFunc": "patchFrameDispatcher",
+    "callKind": "setBodyText",
+    "bodyFile": "patchFrameDispatcher_setBodyText_03.txt",
+    "chars": 258,
+    "contextSymbols": [
+      "evaluateExpression",
+      "evaluateExpressionHandle",
+      "evalOnSelectorAll"
+    ]
+  },
+  {
+    "sourceFile": "frameSelectorsPatch.ts",
+    "patchFunc": "patchFrameSelectors",
+    "callKind": "insertStatements",
+    "bodyFile": "patchFrameSelectors_insertStatements_01.txt",
+    "chars": 191,
+    "contextSymbols": [
+      "queryArrayInMainWorld",
+      "mainWorld",
+      "_resolveChainedSelector"
+    ]
+  },
+  {
+    "sourceFile": "frameSelectorsPatch.ts",
+    "patchFunc": "patchFrameSelectors",
+    "callKind": "replaceWithText",
+    "bodyFile": "patchFrameSelectors_replaceWithText_01.txt",
+    "chars": 860,
+    "contextSymbols": [
+      "queryArrayInMainWorld",
+      "mainWorld",
+      "_resolveChainedSelector"
+    ]
+  },
+  {
+    "sourceFile": "frameSelectorsPatch.ts",
+    "patchFunc": "patchFrameSelectors",
+    "callKind": "setBodyText",
+    "bodyFile": "patchFrameSelectors_setBodyText_01.txt",
+    "chars": 491,
+    "contextSymbols": [
+      "packages/playwright-core/src/server/frameSelectors.ts",
+      "FrameSelectors",
+      "_hasClosedShadowRoots"
+    ]
+  },
+  {
+    "sourceFile": "frameSelectorsPatch.ts",
+    "patchFunc": "patchFrameSelectors",
+    "callKind": "setBodyText",
+    "bodyFile": "patchFrameSelectors_setBodyText_02.txt",
+    "chars": 302,
+    "contextSymbols": [
+      "_callOnSelectorInternal",
+      "functionText",
+      "returnByValue"
+    ]
+  },
+  {
+    "sourceFile": "frameSelectorsPatch.ts",
+    "patchFunc": "patchFrameSelectors",
+    "callKind": "setBodyText",
+    "bodyFile": "patchFrameSelectors_setBodyText_03.txt",
+    "chars": 5970,
+    "contextSymbols": [
+      "_resolveChainedSelector",
+      "_customFindFramesByParsed",
+      "_customFindFramesByParsed"
+    ]
+  },
+  {
+    "sourceFile": "frameSelectorsPatch.ts",
+    "patchFunc": "patchFrameSelectors",
+    "callKind": "setBodyText",
+    "bodyFile": "patchFrameSelectors_setBodyText_04.txt",
+    "chars": 1923,
+    "contextSymbols": [
+      "_customFindFramesByParsed",
+      "_customFindFramesByParsed",
+      "_findElementPositionInDomTree"
+    ]
+  },
+  {
+    "sourceFile": "frameSelectorsPatch.ts",
+    "patchFunc": "patchFrameSelectors",
+    "callKind": "setInitializer",
+    "bodyFile": "patchFrameSelectors_setInitializer_01.txt",
+    "chars": 75,
+    "contextSymbols": [
+      "FrameSelectors",
+      "_hasClosedShadowRoots",
+      "_callOnSelectorInternal"
+    ]
+  },
+  {
+    "sourceFile": "frameSelectorsPatch.ts",
+    "patchFunc": "patchFrameSelectors",
+    "callKind": "setInitializer",
+    "bodyFile": "patchFrameSelectors_setInitializer_02.txt",
+    "chars": 211,
+    "contextSymbols": [
+      "queryArrayInMainWorld",
+      "mainWorld",
+      "_resolveChainedSelector"
+    ]
+  },
+  {
+    "sourceFile": "frameSelectorsPatch.ts",
+    "patchFunc": "patchFrameSelectors",
+    "callKind": "statements",
+    "bodyFile": "patchFrameSelectors_statements_01.txt",
+    "chars": 1416,
+    "contextSymbols": [
+      "queryArrayInMainWorld",
+      "mainWorld",
+      "_resolveChainedSelector"
+    ]
+  },
+  {
+    "sourceFile": "framesPatch.ts",
+    "patchFunc": "patchFrames",
+    "callKind": "setBodyText",
+    "bodyFile": "patchFrames_setBodyText_01.txt",
+    "chars": 302,
+    "contextSymbols": [
+      "FrameManager",
+      "Frame",
+      "evalOnSelector"
+    ]
+  },
+  {
+    "sourceFile": "framesPatch.ts",
+    "patchFunc": "patchFrames",
+    "callKind": "setBodyText",
+    "bodyFile": "patchFrames_setBodyText_02.txt",
+    "chars": 1224,
+    "contextSymbols": [
+      "Frame",
+      "evalOnSelector",
+      "evalOnSelectorAll"
+    ]
+  },
+  {
+    "sourceFile": "framesPatch.ts",
+    "patchFunc": "patchFrames",
+    "callKind": "setBodyText",
+    "bodyFile": "patchFrames_setBodyText_03.txt",
+    "chars": 2193,
+    "contextSymbols": [
+      "evalOnSelector",
+      "evalOnSelectorAll",
+      "dispatchEvent"
+    ]
+  },
+  {
+    "sourceFile": "framesPatch.ts",
+    "patchFunc": "patchFrames",
+    "callKind": "setBodyText",
+    "bodyFile": "patchFrames_setBodyText_04.txt",
+    "chars": 689,
+    "contextSymbols": [
+      "evalOnSelectorAll",
+      "dispatchEvent",
+      "querySelectorAll"
+    ]
+  },
+  {
+    "sourceFile": "framesPatch.ts",
+    "patchFunc": "patchFrames",
+    "callKind": "setBodyText",
+    "bodyFile": "patchFrames_setBodyText_05.txt",
+    "chars": 469,
+    "contextSymbols": [
+      "dispatchEvent",
+      "querySelectorAll",
+      "querySelector"
+    ]
+  },
+  {
+    "sourceFile": "framesPatch.ts",
+    "patchFunc": "patchFrames",
+    "callKind": "setBodyText",
+    "bodyFile": "patchFrames_setBodyText_06.txt",
+    "chars": 717,
+    "contextSymbols": [
+      "querySelectorAll",
+      "querySelector",
+      "_getFrameMainFrameContextId"
+    ]
+  },
+  {
+    "sourceFile": "framesPatch.ts",
+    "patchFunc": "patchFrames",
+    "callKind": "setBodyText",
+    "bodyFile": "patchFrames_setBodyText_07.txt",
+    "chars": 3593,
+    "contextSymbols": [
+      "querySelector",
+      "_getFrameMainFrameContextId",
+      "context"
+    ]
+  },
+  {
+    "sourceFile": "framesPatch.ts",
+    "patchFunc": "patchFrames",
+    "callKind": "setBodyText",
+    "bodyFile": "patchFrames_setBodyText_08.txt",
+    "chars": 142,
+    "contextSymbols": [
+      "_getFrameMainFrameContextId",
+      "context",
+      "existingContext"
+    ]
+  },
+  {
+    "sourceFile": "framesPatch.ts",
+    "patchFunc": "patchFrames",
+    "callKind": "setBodyText",
+    "bodyFile": "patchFrames_setBodyText_09.txt",
+    "chars": 625,
+    "contextSymbols": [
+      "HighlightController",
+      "_resolve",
+      "setContent"
+    ]
+  },
+  {
+    "sourceFile": "framesPatch.ts",
+    "patchFunc": "patchFrames",
+    "callKind": "setBodyText",
+    "bodyFile": "patchFrames_setBodyText_10.txt",
+    "chars": 2882,
+    "contextSymbols": [
+      "_resolve",
+      "setContent",
+      "_retryWithProgressIfNotConnected"
+    ]
+  },
+  {
+    "sourceFile": "framesPatch.ts",
+    "patchFunc": "patchFrames",
+    "callKind": "setBodyText",
+    "bodyFile": "patchFrames_setBodyText_11.txt",
+    "chars": 2961,
+    "contextSymbols": [
+      "_resolve",
+      "setContent",
+      "_retryWithProgressIfNotConnected"
+    ]
+  },
+  {
+    "sourceFile": "framesPatch.ts",
+    "patchFunc": "patchFrames",
+    "callKind": "setBodyText",
+    "bodyFile": "patchFrames_setBodyText_12.txt",
+    "chars": 5717,
+    "contextSymbols": [
+      "setContent",
+      "_retryWithProgressIfNotConnected",
+      "_retryWithoutProgress"
+    ]
+  },
+  {
+    "sourceFile": "framesPatch.ts",
+    "patchFunc": "patchFrames",
+    "callKind": "setBodyText",
+    "bodyFile": "patchFrames_setBodyText_13.txt",
+    "chars": 5092,
+    "contextSymbols": [
+      "_retryWithProgressIfNotConnected",
+      "_retryWithoutProgress",
+      "waitForSelector"
+    ]
+  },
+  {
+    "sourceFile": "framesPatch.ts",
+    "patchFunc": "patchFrames",
+    "callKind": "setBodyText",
+    "bodyFile": "patchFrames_setBodyText_14.txt",
+    "chars": 2322,
+    "contextSymbols": [
+      "waitForSelector",
+      "waitForFunctionExpression",
+      "isVisibleInternal"
+    ]
+  },
+  {
+    "sourceFile": "framesPatch.ts",
+    "patchFunc": "patchFrames",
+    "callKind": "setBodyText",
+    "bodyFile": "patchFrames_setBodyText_15.txt",
+    "chars": 663,
+    "contextSymbols": [
+      "waitForFunctionExpression",
+      "isVisibleInternal",
+      "_onDetached"
+    ]
+  },
+  {
+    "sourceFile": "framesPatch.ts",
+    "patchFunc": "patchFrames",
+    "callKind": "setBodyText",
+    "bodyFile": "patchFrames_setBodyText_16.txt",
+    "chars": 472,
+    "contextSymbols": [
+      "isVisibleInternal",
+      "_onDetached",
+      "evaluateExpression"
+    ]
+  },
+  {
+    "sourceFile": "framesPatch.ts",
+    "patchFunc": "patchFrames",
+    "callKind": "setBodyText",
+    "bodyFile": "patchFrames_setBodyText_17.txt",
+    "chars": 481,
+    "contextSymbols": [
+      "_onDetached",
+      "evaluateExpression",
+      "evaluateExpressionHandle"
+    ]
+  },
+  {
+    "sourceFile": "framesPatch.ts",
+    "patchFunc": "patchFrames",
+    "callKind": "setBodyText",
+    "bodyFile": "patchFrames_setBodyText_18.txt",
+    "chars": 338,
+    "contextSymbols": [
+      "evaluateExpression",
+      "evaluateExpressionHandle",
+      "nonStallingEvaluateInExistingContext"
+    ]
+  },
+  {
+    "sourceFile": "framesPatch.ts",
+    "patchFunc": "patchFrames",
+    "callKind": "setBodyText",
+    "bodyFile": "patchFrames_setBodyText_19.txt",
+    "chars": 519,
+    "contextSymbols": [
+      "evaluateExpressionHandle",
+      "nonStallingEvaluateInExistingContext",
+      "queryCount"
+    ]
+  },
+  {
+    "sourceFile": "framesPatch.ts",
+    "patchFunc": "patchFrames",
+    "callKind": "setBodyText",
+    "bodyFile": "patchFrames_setBodyText_20.txt",
+    "chars": 10140,
+    "contextSymbols": [
+      "nonStallingEvaluateInExistingContext",
+      "queryCount",
+      "_waitForFunctionOnSelector"
+    ]
+  },
+  {
+    "sourceFile": "framesPatch.ts",
+    "patchFunc": "patchFrames",
+    "callKind": "setBodyText",
+    "bodyFile": "patchFrames_setBodyText_21.txt",
+    "chars": 5992,
+    "contextSymbols": [
+      "queryCount",
+      "_waitForFunctionOnSelector",
+      "_customFindElementsByParsed"
+    ]
+  },
+  {
+    "sourceFile": "javascriptPatch.ts",
+    "patchFunc": "patchJavascript",
+    "callKind": "setBodyText",
+    "bodyFile": "patchJavascript_setBodyText_01.txt",
+    "chars": 557,
+    "contextSymbols": [
+      "ExecutionContext",
+      "JSHandle",
+      "evaluateExpression"
+    ]
+  },
+  {
+    "sourceFile": "javascriptPatch.ts",
+    "patchFunc": "patchJavascript",
+    "callKind": "setBodyText",
+    "bodyFile": "patchJavascript_setBodyText_02.txt",
+    "chars": 555,
+    "contextSymbols": [
+      "JSHandle",
+      "evaluateExpression",
+      "evaluateExpressionHandle"
+    ]
+  },
+  {
+    "sourceFile": "javascriptPatch.ts",
+    "patchFunc": "patchJavascript",
+    "callKind": "statements",
+    "bodyFile": "patchJavascript_statements_01.txt",
+    "chars": 401,
+    "contextSymbols": [
+      "packages/playwright-core/src/server/javascript.ts",
+      "ExecutionContextDelegate",
+      "ExecutionContext"
+    ]
+  },
+  {
+    "sourceFile": "networkPatch.ts",
+    "patchFunc": "patchNetwork",
+    "callKind": "setBodyText",
+    "bodyFile": "patchNetwork_setBodyText_01.txt",
+    "chars": 192,
+    "contextSymbols": [
+      "Request",
+      "_rawRequestHeadersPromise",
+      "setRawRequestHeaders"
+    ]
+  },
+  {
+    "sourceFile": "networkPatch.ts",
+    "patchFunc": "patchNetwork",
+    "callKind": "setBodyText",
+    "bodyFile": "patchNetwork_setBodyText_02.txt",
+    "chars": 98,
+    "contextSymbols": [
+      "_rawRequestHeadersPromise",
+      "setRawRequestHeaders",
+      "internalRawRequestHeaders"
+    ]
+  },
+  {
+    "sourceFile": "networkPatch.ts",
+    "patchFunc": "patchNetwork",
+    "callKind": "setBodyText",
+    "bodyFile": "patchNetwork_setBodyText_03.txt",
+    "chars": 173,
+    "contextSymbols": [
+      "packages/playwright-core/src/client/network.ts",
+      "Request",
+      "allHeaders"
+    ]
+  },
+  {
+    "sourceFile": "networkPatch.ts",
+    "patchFunc": "patchNetwork",
+    "callKind": "setBodyText",
+    "bodyFile": "patchNetwork_setBodyText_04.txt",
+    "chars": 710,
+    "contextSymbols": [
+      "Request",
+      "allHeaders",
+      "_applyFallbackOverrides"
+    ]
+  },
+  {
+    "sourceFile": "pagePatch.ts",
+    "patchFunc": "patchPage",
+    "callKind": "insertStatements",
+    "bodyFile": "patchPage_insertStatements_01.txt",
+    "chars": 88,
+    "contextSymbols": [
+      "Page",
+      "exposeBinding",
+      "removeExposedBinding"
+    ]
+  },
+  {
+    "sourceFile": "pagePatch.ts",
+    "patchFunc": "patchPage",
+    "callKind": "insertStatements",
+    "bodyFile": "patchPage_insertStatements_02.txt",
+    "chars": 313,
+    "contextSymbols": [
+      "PageBinding",
+      "InitScript",
+      "Worker"
+    ]
+  },
+  {
+    "sourceFile": "pagePatch.ts",
+    "patchFunc": "patchPage",
+    "callKind": "replaceWithText",
+    "bodyFile": "patchPage_replaceWithText_01.txt",
+    "chars": 5637,
+    "contextSymbols": [
+      "allInitScripts",
+      "allBindings",
+      "PageBinding"
+    ]
+  },
+  {
+    "sourceFile": "pagePatch.ts",
+    "patchFunc": "patchPage",
+    "callKind": "replaceWithText",
+    "bodyFile": "patchPage_replaceWithText_02.txt",
+    "chars": 316,
+    "contextSymbols": [
+      "InitScript",
+      "Worker",
+      "_performLocatorHandlersCheckpoint"
+    ]
+  },
+  {
+    "sourceFile": "pagePatch.ts",
+    "patchFunc": "patchPage",
+    "callKind": "setBodyText",
+    "bodyFile": "patchPage_setBodyText_01.txt",
+    "chars": 682,
+    "contextSymbols": [
+      "packages/playwright-core/src/server/page.ts",
+      "Page",
+      "exposeBinding"
+    ]
+  },
+  {
+    "sourceFile": "pagePatch.ts",
+    "patchFunc": "patchPage",
+    "callKind": "setBodyText",
+    "bodyFile": "patchPage_setBodyText_02.txt",
+    "chars": 92,
+    "contextSymbols": [
+      "removeExposedBinding",
+      "allInitScripts",
+      "allBindings"
+    ]
+  },
+  {
+    "sourceFile": "pagePatch.ts",
+    "patchFunc": "patchPage",
+    "callKind": "setBodyText",
+    "bodyFile": "patchPage_setBodyText_03.txt",
+    "chars": 429,
+    "contextSymbols": [
+      "exposeBinding",
+      "exposeFunction",
+      "installInjectRoute"
+    ]
+  },
+  {
+    "sourceFile": "pageBindingPatch.ts",
+    "patchFunc": "patchPageBinding",
+    "callKind": "createSourceFile:pageBindingSourceContent",
+    "bodyFile": "patchPageBinding_createSourceFile_01.txt",
+    "chars": 3458,
+    "contextSymbols": []
+  },
+  {
+    "sourceFile": "recorderPatch.ts",
+    "patchFunc": "patchRecorder",
+    "callKind": "setBodyText",
+    "bodyFile": "patchRecorder_setBodyText_01.txt",
+    "chars": 85,
+    "contextSymbols": [
+      "packages/recorder/src/recorder.tsx",
+      "Recorder"
+    ]
+  },
+  {
+    "sourceFile": "screenshotterPatch.ts",
+    "patchFunc": "patchScreenshotter",
+    "callKind": "insertStatements",
+    "bodyFile": "patchScreenshotter_insertStatements_01.txt",
+    "chars": 123,
+    "contextSymbols": [
+      "packages/playwright-core/src/server/screenshotter.ts",
+      "Screenshotter",
+      "_preparePageForScreenshot"
+    ]
+  },
+  {
+    "sourceFile": "snapshotterPatch.ts",
+    "patchFunc": "patchSnapshotter",
+    "callKind": "addStatements",
+    "bodyFile": "patchSnapshotter_addStatements_01.txt",
+    "chars": 161,
+    "contextSymbols": [
+      "resetForReuse",
+      "_captureFrameSnapshot",
+      "_onPage"
+    ]
+  },
+  {
+    "sourceFile": "snapshotterPatch.ts",
+    "patchFunc": "patchSnapshotter",
+    "callKind": "setBodyText",
+    "bodyFile": "patchSnapshotter_setBodyText_01.txt",
+    "chars": 522,
+    "contextSymbols": [
+      "_initScript",
+      "reset",
+      "_initialize"
+    ]
+  },
+  {
+    "sourceFile": "snapshotterPatch.ts",
+    "patchFunc": "patchSnapshotter",
+    "callKind": "setBodyText",
+    "bodyFile": "patchSnapshotter_setBodyText_02.txt",
+    "chars": 164,
+    "contextSymbols": [
+      "reset",
+      "_initialize",
+      "resetForReuse"
+    ]
+  },
+  {
+    "sourceFile": "snapshotterPatch.ts",
+    "patchFunc": "patchSnapshotter",
+    "callKind": "setBodyText",
+    "bodyFile": "patchSnapshotter_setBodyText_03.txt",
+    "chars": 157,
+    "contextSymbols": [
+      "_captureFrameSnapshot",
+      "_onPage",
+      "_onFrameNavigated"
+    ]
+  },
+  {
+    "sourceFile": "snapshotterInjectedPatch.ts",
+    "patchFunc": "patchSnapshotterInjected",
+    "callKind": "setBodyText",
+    "bodyFile": "patchSnapshotterInjected_setBodyText_01.txt",
+    "chars": 160,
+    "contextSymbols": [
+      "_interceptNativeGetter",
+      "_invalidateStyleSheet",
+      "_updateStyleElementStyleSheetTextIfNeeded"
+    ]
+  },
+  {
+    "sourceFile": "snapshotterInjectedPatch.ts",
+    "patchFunc": "patchSnapshotterInjected",
+    "callKind": "setBodyText",
+    "bodyFile": "patchSnapshotterInjected_setBodyText_02.txt",
+    "chars": 443,
+    "contextSymbols": [
+      "_invalidateStyleSheet",
+      "_updateStyleElementStyleSheetTextIfNeeded",
+      "_updateLinkStyleSheetTextIfNeeded"
+    ]
+  },
+  {
+    "sourceFile": "snapshotterInjectedPatch.ts",
+    "patchFunc": "patchSnapshotterInjected",
+    "callKind": "setBodyText",
+    "bodyFile": "patchSnapshotterInjected_setBodyText_03.txt",
+    "chars": 125,
+    "contextSymbols": [
+      "_updateStyleElementStyleSheetTextIfNeeded",
+      "_updateLinkStyleSheetTextIfNeeded",
+      "_getSheetText"
+    ]
+  },
+  {
+    "sourceFile": "tracingPatch.ts",
+    "patchFunc": "patchTracing",
+    "callKind": "insertStatements",
+    "bodyFile": "patchTracing_insertStatements_01.txt",
+    "chars": 212,
+    "contextSymbols": []
+  },
+  {
+    "sourceFile": "utilityScriptPatch.ts",
+    "patchFunc": "patchUtilityScript",
+    "callKind": "statements",
+    "bodyFile": "patchUtilityScript_statements_01.txt",
+    "chars": 119,
+    "contextSymbols": [
+      "UtilityScript",
+      "global",
+      "evaluate"
+    ]
+  },
+  {
+    "sourceFile": "utilityScriptSerializersPatch.ts",
+    "patchFunc": "patchUtilityScriptSerializers",
+    "callKind": "createSourceFile:oldUtilityScriptSerializerSourceContent",
+    "bodyFile": "patchUtilityScriptSerializers_createSourceFile_01.txt",
+    "chars": 9454,
+    "contextSymbols": [
+      "packages/isomorphic/utilityScriptSerializers.ts",
+      "parseEvaluationResultValue",
+      "innerSerialize"
+    ]
+  },
+  {
+    "sourceFile": "utilityScriptSerializersPatch.ts",
+    "patchFunc": "patchUtilityScriptSerializers",
+    "callKind": "replaceWithText",
+    "bodyFile": "patchUtilityScriptSerializers_replaceWithText_01.txt",
+    "chars": 2562,
+    "contextSymbols": [
+      "packages/isomorphic/utilityScriptSerializers.ts",
+      "parseEvaluationResultValue"
+    ]
+  },
+  {
+    "sourceFile": "XPathSelectorEnginePatch.ts",
+    "patchFunc": "patchXPathSelectorEngine",
+    "callKind": "insertStatements",
+    "bodyFile": "patchXPathSelectorEngine_insertStatements_01.txt",
+    "chars": 1500,
+    "contextSymbols": [
+      "packages/injected/src/xpathSelectorEngine.ts",
+      "XPathEngine",
+      "queryAll"
+    ]
+  }
+]

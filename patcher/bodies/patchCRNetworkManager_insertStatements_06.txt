@@ -1,0 +1,4 @@
+
+		if (fulfilledSetCookieHeaders.length)
+			response.setRawResponseHeaders(responseHeaders);
+	

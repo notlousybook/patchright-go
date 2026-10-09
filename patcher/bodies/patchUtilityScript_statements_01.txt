@@ -1,0 +1,5 @@
+
+			const callback = this._functionCallbacks.get(name);
+			this._functionCallbacks.delete(name);
+			return callback;
+		

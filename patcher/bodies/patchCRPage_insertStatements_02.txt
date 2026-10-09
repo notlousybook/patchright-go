@@ -1,0 +1,4 @@
+
+		if (this._isMainFrame() && !this._crPage._opener)
+			await Promise.all(promises);
+	

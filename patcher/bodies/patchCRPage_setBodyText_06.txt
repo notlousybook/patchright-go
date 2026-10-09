@@ -1,0 +1,5 @@
+
+			const worldName = world === 'utility' ? this._crPage.utilityWorldName : undefined;
+			const { identifier } = await this._client.send('Page.addScriptToEvaluateOnNewDocument', { source: initScript.source, worldName, runImmediately });
+			this._initScriptIds.set(initScript, identifier);
+		

@@ -1,0 +1,12 @@
+
+			const toRemove = new Set(initScripts);
+			this._evaluateOnNewDocumentScripts = this._evaluateOnNewDocumentScripts.filter(script => !toRemove.has(script));
+			const ids: string[] = [];
+			for (const script of initScripts) {
+				const id = this._initScriptIds.get(script);
+				if (id)
+					ids.push(id);
+				this._initScriptIds.delete(script);
+			}
+			await Promise.all(ids.map(identifier => this._client.send('Page.removeScriptToEvaluateOnNewDocument', { identifier }).catch(() => {})));
+		

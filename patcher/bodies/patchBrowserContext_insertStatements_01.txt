@@ -1,0 +1,6 @@
+
+		if (binding.noGlobal) {
+			await binding.disposeFunctionCallbacks();
+			return;
+		}
+	

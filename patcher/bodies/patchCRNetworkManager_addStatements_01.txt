@@ -1,0 +1,4 @@
+
+			if (this._page)
+				await this._forEachSession(info => info.session.send('Network.setCacheDisabled', { cacheDisabled: this._page.needsRequestInterception() }));
+		

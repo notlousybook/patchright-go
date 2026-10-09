@@ -1,0 +1,3 @@
+
+		return this._overrides?.headers || this._rawRequestHeaders || this._rawRequestHeadersPromise;
+	

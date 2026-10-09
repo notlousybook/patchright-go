@@ -1,0 +1,6 @@
+
+		if (isInterceptedOptionsPreflight && !(this._page || this._serviceWorker).needsRequestInterception()) {
+			requestPausedSessionInfo!.session._sendMayFail('Fetch.continueRequest', { requestId: requestPausedEvent!.requestId });
+			return;
+		}
+	

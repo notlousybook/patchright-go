@@ -1,0 +1,28 @@
+# Upstream Playwright checkout used for -tags checkout validation (recreated via:
+#   git clone --filter=blob:none --sparse --branch v1.60.0 https://github.com/microsoft/playwright tmp-playwright)
+tmp-playwright/
+
+# Go build cache and binaries.
+/bin/
+/dist/
+*.exe
+*.test
+*.out
+/demo/
+/patchright
+/patchright.exe
+
+# Test artifacts.
+report.json
+step_summary.md
+affected_diff.patch
+issue_body.md
+patchright.patch
+artifacts/
+
+# Editor / OS noise.
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db

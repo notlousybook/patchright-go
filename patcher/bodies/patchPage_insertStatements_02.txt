@@ -1,0 +1,10 @@
+
+			let context = await this._executionContextPromise;
+			if (context instanceof domValue.FrameExecutionContext) {
+				const frame = context.frame;
+				if (frame) {
+					if (isolatedContext) context = await frame.utilityContext();
+					else if (!isolatedContext) context = await frame.mainContext();
+				}
+			}
+		

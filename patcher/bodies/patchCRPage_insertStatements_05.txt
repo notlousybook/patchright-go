@@ -1,0 +1,4 @@
+
+		for (const name of this._exposedBindingNames)
+			this._client._sendMayFail('Runtime.addBinding', { name: name, executionContextId: contextPayload.id });
+	

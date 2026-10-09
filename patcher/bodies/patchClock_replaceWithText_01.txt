@@ -1,0 +1,12 @@
+
+		if (this._initScripts.length) {
+			const initScriptSources = JSON.stringify(this._initScripts.map((initScript) => initScript.source));
+			await this._evaluateInFrames(`(() => {
+				if (globalThis.__pwClock?.controller)
+					return;
+				for (const source of ${initScriptSources})
+					(0, eval)(source);
+			})();`);
+			return;
+		}
+	

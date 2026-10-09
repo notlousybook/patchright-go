@@ -1,0 +1,19 @@
+
+		try {
+		  const frameOwner = await client._sendMayFail("DOM.getFrameOwner", { frameId: this._id });
+		  if (!frameOwner?.backendNodeId)
+		    return 0;
+
+		  const describedNode = await client._sendMayFail("DOM.describeNode", { backendNodeId: frameOwner.backendNodeId });
+		  if (!describedNode?.node.contentDocument)
+		    return 0;
+
+		  const resolvedNode = await client._sendMayFail("DOM.resolveNode", { backendNodeId: describedNode.node.contentDocument.backendNodeId });
+		  if (!resolvedNode?.object?.objectId)
+		    return 0;
+
+		  const executionContextId = parseInt(resolvedNode.object.objectId.split(".")[1], 10);
+		  return isNaN(executionContextId) ? 0 : executionContextId;
+		} catch (e) {}
+		return 0;
+	

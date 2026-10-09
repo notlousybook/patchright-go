@@ -1,0 +1,5 @@
+
+				// Filter out internal fallback Route.continue calls from Patchright's inject routing
+				if (metadata.type === 'Route' && metadata.method === 'continue' && metadata.params?.isFallback)
+					return null;
+			

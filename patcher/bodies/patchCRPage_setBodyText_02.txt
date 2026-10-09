@@ -1,0 +1,3 @@
+
+		await this._forAllFrameSessions(frame => frame._removeExposedBindings());
+	

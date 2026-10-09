@@ -1,0 +1,32 @@
+
+		// Get Element Position in DOM Tree by Indexing it via their children indexes, like a search tree index
+		// Check if backendNodeId matches, if so, return currentIndex
+		if (element.backendNodeId === queryingElement.backendNodeId)
+			return currentIndex;
+
+		// Iterating through children of queryingElement
+		for (const [childrenNodeIndex, child] of (queryingElement.children || []).entries()) {
+			// Further querying the child recursively and appending the children index to the currentIndex
+			const childIndex = await this._findElementPositionInDomTree(element, child, context, currentIndex + "." + childrenNodeIndex.toString());
+			if (childIndex !== null) return childIndex;
+		}
+
+		for (const shadowRoot of queryingElement.shadowRoots || []) {
+			// For CSRs, we dont have to append its index because patchright treats CSRs like they dont exist
+			if (shadowRoot.shadowRootType === "closed" && shadowRoot.backendNodeId) {
+				// Resolve the CDP client for the current context so closed shadow roots can be traversed safely.
+				const client = context.frame._page.delegate._sessionForFrame(context.frame)._client;
+				const describedShadowRoot = await client.send("DOM.describeNode", { backendNodeId: shadowRoot.backendNodeId, depth: -1, pierce: true });
+				if (describedShadowRoot && describedShadowRoot.node) {
+					const childIndex = await this._findElementPositionInDomTree(element, describedShadowRoot.node, context, currentIndex);
+					if (childIndex !== null) return childIndex;
+				}
+			}
+			// Traverse into shadow root children (open and closed) to properly position elements inside shadow DOMs
+			for (const [shadowChildIndex, shadowChild] of (shadowRoot.children || []).entries()) {
+				const childIndex = await this._findElementPositionInDomTree(element, shadowChild, context, currentIndex + "." + shadowChildIndex.toString());
+				if (childIndex !== null) return childIndex;
+			}
+		}
+		return null;
+	

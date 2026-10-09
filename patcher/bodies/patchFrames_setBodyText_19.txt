@@ -1,0 +1,15 @@
+
+		try {
+			const continuePolling = Symbol("continuePolling");
+			const result = await this._retryWithoutProgress(progress, selector, {strict: null, performActionPreChecks: false }, async (result) => {
+				if (!result || !result[0])
+					return 0;
+				return Array.isArray(result[1]) ? result[1].length : 0;
+			}, 'returnAll', continuePolling);
+			return result === continuePolling ? await this.selectors.queryCount(selector) : result;
+		} catch (e) {
+			if (this.isNonRetriableError(e))
+				throw e;
+			return 0;
+		}
+	

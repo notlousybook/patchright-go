@@ -1,0 +1,16 @@
+
+		const continuePolling = Symbol("continuePolling");
+		let result;
+		try {
+			result = await this._retryWithoutProgress(progress, selector, {strict: null, performActionPreChecks: false}, async (result) => {
+				if (!result || !result[0]) return [];
+				return Array.isArray(result[1]) ? result[1] : [];
+			}, 'returnAll', continuePolling);
+		} catch (e: any) {
+			if ((e instanceof ReferenceError || e?.name === 'ReferenceError' || e?.message?.includes("element is not defined")) && e.message.includes("element is not defined"))
+				result = continuePolling;
+			else
+				throw e;
+		}
+		return result === continuePolling ? await progress.race(this.selectors.queryAll(selector)) : result;
+	

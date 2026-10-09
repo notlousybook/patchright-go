@@ -1,0 +1,9 @@
+
+		const data = ensureCachedData(sheet);
+		try {
+			data.cssText = this._getSheetText(sheet);
+		} catch (e) {
+			data.cssText = '';
+		}
+		return data.cssText;
+	

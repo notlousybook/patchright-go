@@ -1,0 +1,94 @@
+
+		if (this._isDetached())
+			throw new Error('Frame was detached');
+
+		let client;
+		try {
+			client = this._page.delegate._sessionForFrame(this)._client;
+		} catch (e) {
+			client = this._page.delegate._mainFrameSession._client;
+		}
+
+		const rethrowSessionClosedError = (error: Error) => {
+			if (isSessionClosedError(error)) throw error;
+		};
+
+		const isMainFrame = this === this._page.mainFrame();
+		const session = this._page.delegate._sessionForFrame(this);
+
+		const registerContext = (executionContextId: number, worldName: string) => {
+			const crContext = new CRExecutionContext(client, { id: executionContextId }, this._id);
+			const frameContext = new FrameExecutionContext(crContext, this, worldName);
+			session._onExecutionContextCreated({
+				id: executionContextId,
+				origin: worldName,
+				name: worldName,
+				auxData: { isDefault: isMainFrame, type: 'isolated', frameId: this._id },
+			});
+			return frameContext;
+		};
+
+		if (world === "main") {
+			if (!isMainFrame && this._iframeWorld === undefined) {
+				const contextPromise = this._iframeWorldContextPromise ??= this._getFrameMainFrameContextId(client).then(id => id || undefined);
+				const executionContextId = await contextPromise;
+				if (this._iframeWorldContextPromise !== contextPromise)
+					return this._context(world);
+				if (!executionContextId) {
+					this._iframeWorldContextPromise = undefined;
+					if (this._isDetached())
+						throw new Error('Frame was detached');
+				} else if (this._iframeWorld === undefined) {
+					this._iframeWorld = registerContext(executionContextId, world);
+				}
+			}
+			if (!this._iframeWorld && this._mainWorld === undefined) {
+				const contextPromise = this._mainWorldContextPromise ??= client.send('Runtime.evaluate', {
+					expression: "globalThis",
+					serializationOptions: { serialization: "idOnly" },
+				}).catch(rethrowSessionClosedError).then(globalThis => {
+					const objectId = globalThis?.result?.objectId;
+					if (!objectId)
+						return undefined;
+					const executionContextId = parseInt(objectId.split('.')[1], 10);
+					return isNaN(executionContextId) ? undefined : executionContextId;
+				});
+				const executionContextId = await contextPromise;
+				if (this._mainWorldContextPromise !== contextPromise)
+					return this._context(world);
+				if (!executionContextId) {
+					this._mainWorldContextPromise = undefined;
+					if (this._isDetached())
+						throw new Error('Frame was detached');
+					return this._context(world);
+				}
+				if (this._mainWorld === undefined)
+					this._mainWorld = registerContext(executionContextId, world);
+			}
+		}
+
+		if (world !== "main" && this._isolatedWorld === undefined) {
+			const contextPromise = this._isolatedWorldContextPromise ??= client.send('Page.createIsolatedWorld', {
+				frameId: this._id, grantUniveralAccess: true, worldName: world,
+			}).catch(rethrowSessionClosedError).then(result => result?.executionContextId);
+			const executionContextId = await contextPromise;
+			if (this._isolatedWorldContextPromise !== contextPromise)
+				return this._context(world);
+			if (!executionContextId) {
+				this._isolatedWorldContextPromise = undefined;
+				if (this._isDetached())
+					throw new Error('Frame was detached');
+				return this._context(world);
+			}
+			if (this._isolatedWorld === undefined)
+				this._isolatedWorld = registerContext(executionContextId, "utility");
+		}
+		if (this._isDetached())
+			throw new Error('Frame was detached');
+
+		if (world !== "main")
+			return this._isolatedWorld;
+		if (!isMainFrame && this._iframeWorld)
+			return this._iframeWorld;
+		return this._mainWorld;
+	

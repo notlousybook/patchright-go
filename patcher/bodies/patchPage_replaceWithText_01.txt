@@ -1,0 +1,147 @@
+
+		export class PageBinding extends DisposableObject {
+			readonly source: string;
+			readonly name: string;
+			readonly playwrightFunction: frames.FunctionWithSource;
+			readonly initScript: InitScript;
+			readonly noGlobal: boolean;
+			readonly cleanupScript: string;
+			private _callbackBridges = new Set<js.JSHandle>();
+			private _functionCallbacksDisposed = false;
+			forClient?: unknown;
+
+			constructor(parent: BrowserContext | Page, name: string, playwrightFunction: frames.FunctionWithSource, noGlobal?: boolean) {
+				super(parent);
+				this.name = name;
+				this.playwrightFunction = playwrightFunction;
+				this.noGlobal = !!noGlobal;
+				this.initScript = new InitScript(parent, this.noGlobal ? '' : createPageBindingScript(name, false));
+				this.source = this.noGlobal ? '' : this.initScript.source;
+				this.cleanupScript = this.noGlobal ? '' : `delete globalThis[${JSON.stringify(name)}];`;
+			}
+
+			async dispatchFunction(page: Page, context: js.ExecutionContext) {
+				for (let retryDelay = 10; !this._functionCallbacksDisposed && page.getBinding(this.name) === this; retryDelay = Math.min(retryDelay * 2, 1000)) {
+					const bridges = await context.findFunctions(this.name).catch(() => []);
+					let installed = false;
+					for (const bridge of bridges) {
+						const claimed = await bridge.evaluate((bridge: any) => bridge({ type: 'claim' })).catch(() => false);
+						if (!claimed) {
+							bridge.dispose();
+							continue;
+						}
+						if (this._functionCallbacksDisposed || page.getBinding(this.name) !== this) {
+							await bridge.evaluate((bridge: any) => bridge({ type: 'dispose' })).catch(() => {});
+							bridge.dispose();
+							continue;
+						}
+						installed = true;
+						this._callbackBridges.add(bridge);
+						this._dispatchFunctionCalls(page, context, bridge).catch(() => {});
+					}
+					if (installed)
+						return;
+					const retry = await context.raceAgainstContextDestroyed(
+						new Promise<boolean>(resolve => setTimeout(() => resolve(true), retryDelay))
+					).catch(() => false);
+					if (!retry)
+						return;
+				}
+			}
+
+			private async _dispatchFunctionCalls(page: Page, context: js.ExecutionContext, bridge: js.JSHandle) {
+				try {
+					while (page.getBinding(this.name) === this) {
+						const call = await bridge.evaluate((bridge: any) => bridge({ type: 'next' }));
+						if (!call)
+							break;
+						this._dispatchFunctionCall(page, context, bridge, call).catch(() => {});
+					}
+				} finally {
+					this._callbackBridges.delete(bridge);
+					bridge.dispose();
+				}
+			}
+
+			private async _dispatchFunctionCall(page: Page, context: js.ExecutionContext, bridge: js.JSHandle, call: any) {
+				try {
+					if (!Array.isArray(call.serializedArgs))
+						throw new Error('serializedArgs is not an array. This can happen when Array.prototype.toJSON is defined incorrectly');
+					const frame = context.attribution.frame;
+					if (!frame)
+						throw new Error('Function callback must run in a frame');
+					const args = call.serializedArgs.map((arg: any) => parseEvaluationResultValue(arg));
+					const result = await this.playwrightFunction({ frame, page, context: page.browserContext }, ...args);
+					await bridge.evaluate((bridge: any, { seq, result }) => bridge({ type: 'resolve', seq, result }), { seq: call.seq, result });
+				} catch (error) {
+					await bridge.evaluate((bridge: any, { seq, error }) => bridge({ type: 'reject', seq, error }), { seq: call.seq, error }).catch(() => {});
+				}
+			}
+
+			async disposeFunctionCallbacks() {
+				this._functionCallbacksDisposed = true;
+				const bridges = [...this._callbackBridges];
+				this._callbackBridges.clear();
+				await Promise.all(bridges.map(async bridge => {
+					await bridge.evaluate((bridge: any) => bridge({ type: 'dispose' })).catch(() => {});
+					bridge.dispose();
+				}));
+			}
+
+			static async dispatch(page: Page, payload: string, context: dom.FrameExecutionContext) {
+				let bindingPayload: BindingPayload;
+				try {
+					bindingPayload = JSON.parse(payload) as BindingPayload;
+				} catch {
+					return;
+				}
+				const { name, seq, serializedArgs } = bindingPayload;
+
+				const deliver = async (deliverPayload: any) => {
+					let deliveryError: any;
+					try {
+						await context.evaluate(deliverBindingResult, deliverPayload);
+						return;
+					} catch (e) {
+						deliveryError = e;
+					}
+					const frame = context.frame;
+					if (!frame) {
+						debugLogger.log('error', deliveryError);
+						return;
+					}
+					const mainContext = await frame.mainContext().catch(() => null);
+					const utilityContext = await frame.utilityContext().catch(() => null);
+					for (const ctx of [mainContext, utilityContext]) {
+						if (!ctx || ctx === context)
+							continue;
+						try {
+							await ctx.evaluate(deliverBindingResult, deliverPayload);
+							return;
+						} catch {
+						}
+					}
+					debugLogger.log('error', deliveryError);
+				};
+
+				try {
+					assert(context.world);
+					const binding = page.getBinding(name);
+					if (!binding)
+						throw new Error(`Function "${name}" is not exposed`);
+
+					if (!Array.isArray(serializedArgs))
+						throw new Error(`serializedArgs is not an array. This can happen when Array.prototype.toJSON is defined incorrectly`);
+					const args = serializedArgs.map(a => parseEvaluationResultValue(a));
+					const result = await binding.playwrightFunction({ frame: context.frame, page, context: page.browserContext }, ...args);
+					await deliver({ name, seq, result });
+				} catch (error) {
+					await deliver({ name, seq, error });
+				}
+			}
+
+			override async dispose(): Promise<void> {
+				await this.parent.removeExposedBinding(this);
+			}
+		}
+	

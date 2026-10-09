@@ -1,0 +1,17 @@
+
+		if (binding.noGlobal)
+			return;
+		// Remember this binding so future execution contexts get it in _onExecutionContextCreated.
+		this._exposedBindingNames.push(binding.name);
+		this._exposedBindingScripts.push(binding.source);
+
+		// Install binding in all existing execution contexts.
+		const contextIds = Array.from(this._contextIdToContext.keys());
+		await Promise.all([
+			this._client._sendMayFail('Runtime.addBinding', { name: binding.name }),
+			...contextIds.map(executionContextId => this._client._sendMayFail('Runtime.addBinding', { name: binding.name, executionContextId })),
+		]);
+
+		// Install the wrapper before later init scripts and in all existing contexts.
+		await this._evaluateOnNewDocument(binding.initScript, 'main', true);
+	

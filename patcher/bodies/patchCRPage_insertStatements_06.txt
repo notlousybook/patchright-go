@@ -1,0 +1,3 @@
+
+		if (contextPayload.auxData?.type === "worker") throw new Error("ExecutionContext is worker");
+	

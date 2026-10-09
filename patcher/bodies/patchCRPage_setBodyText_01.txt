@@ -1,0 +1,6 @@
+
+		if (binding.noGlobal)
+			return;
+		await this._forAllFrameSessions(frame => frame._initBinding(binding));
+		await Promise.all(this._page.frames().map(frame => frame.evaluateExpression(binding.source).catch(e => {})));
+	

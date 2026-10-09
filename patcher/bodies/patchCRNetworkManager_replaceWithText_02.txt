@@ -1,0 +1,5 @@
+
+				const hasHarRecorders = !!this._page?.browserContext?._harRecorders?.size;
+				const userInterception = this._page ? this._page.needsRequestInterception() : false;
+				const cachePromise = info.session.send('Network.setCacheDisabled', { cacheDisabled: userInterception || hasHarRecorders });
+			

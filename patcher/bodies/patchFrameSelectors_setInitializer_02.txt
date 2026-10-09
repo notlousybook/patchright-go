@@ -1,0 +1,5 @@
+noStall ? await frame.raceAgainstEvaluationStallingEvents(() => frame.context(${world})).catch(e => {
+			if (e instanceof EvaluationStalledError)
+				return null;
+			throw e;
+		}) : await frame.context(${world})

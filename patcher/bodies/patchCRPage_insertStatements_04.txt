@@ -1,0 +1,4 @@
+
+		if (this._isMainFrame() && !this._page.initializedOrUndefined())
+			this._firstNonInitialNavigationCommittedFulfill();
+	

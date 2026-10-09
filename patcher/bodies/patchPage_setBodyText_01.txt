@@ -1,0 +1,17 @@
+
+		if (this._pageBindings.has(name))
+			throw new Error(`Function "${name}" has been already registered`);
+		if (this.browserContext._pageBindings.has(name))
+			throw new Error(`Function "${name}" has been already registered in the browser context`);
+		const binding = new PageBinding(this, name, playwrightBinding, !!noGlobal);
+		this._pageBindings.set(name, binding);
+		if (binding.noGlobal) {
+			for (const frame of this.frames()) {
+				for (const context of [frame.mainContext(), frame.utilityContext()])
+					context.then(context => binding.dispatchFunction(this, context)).catch(() => {});
+			}
+		} else {
+			await this.delegate.exposeBinding(binding);
+		}
+		return binding;
+	

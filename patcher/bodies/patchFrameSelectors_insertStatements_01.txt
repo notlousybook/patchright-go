@@ -1,0 +1,7 @@
+
+			const isConnected = await element.evaluateInUtility(([injected, node]) => node.isConnected, {}).catch(() => false);
+			if (!isConnected) {
+				element.dispose();
+				return null;
+			}
+			

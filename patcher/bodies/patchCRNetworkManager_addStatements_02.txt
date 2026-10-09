@@ -1,0 +1,7 @@
+
+			const requestWillBeSentEvent = this._requestIdToRequestWillBeSentEvent.get(event.requestId);
+			if (requestWillBeSentEvent) {
+				this._onRequest(requestWillBeSentEvent.sessionInfo, requestWillBeSentEvent.event, undefined, undefined);
+				this._requestIdToRequestWillBeSentEvent.delete(event.requestId);
+			}
+		

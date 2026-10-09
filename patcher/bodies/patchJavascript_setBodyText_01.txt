@@ -1,0 +1,15 @@
+
+		const frame = (this as any)._frame;
+		if (frame && isolatedContext !== undefined) {
+			const context = isolatedContext ? await frame.utilityContext() : await frame.mainContext();
+			if (context !== this._context) {
+				const adopted = await frame._page.delegate.adoptElementHandle(this as any, context);
+				try {
+					return await progress.race(adopted.internalEvaluateExpression(expression, options, arg));
+				} finally {
+					adopted.dispose();
+				}
+			}
+		}
+		return await progress.race(this.internalEvaluateExpression(expression, options, arg));
+	

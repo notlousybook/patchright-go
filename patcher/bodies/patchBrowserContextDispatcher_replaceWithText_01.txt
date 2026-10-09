@@ -1,0 +1,6 @@
+
+		this._dialogHandler = dialog => {
+			this._dispatchEvent('dialog', { dialog: new DialogDispatcher(this, dialog) });
+			return true;
+		};
+	

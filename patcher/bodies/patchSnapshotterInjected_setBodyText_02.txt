@@ -1,0 +1,17 @@
+
+		const data = ensureCachedData(sheet);
+		try {
+			const currentText = this._getSheetText(sheet);
+			if (data.cssText === undefined) {
+				data.cssText = currentText;
+				return undefined;
+			}
+			if (currentText === data.cssText)
+				return data.cssRef === undefined ? undefined : snapshotNumber - data.cssRef;
+			data.cssText = currentText;
+			data.cssRef = snapshotNumber;
+			return data.cssText;
+		} catch (e) {
+			return undefined;
+		}
+	

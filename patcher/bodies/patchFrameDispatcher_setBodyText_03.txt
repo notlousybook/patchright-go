@@ -1,0 +1,15 @@
+
+		return {
+				value: serializeResult(
+					await this._frame.evalOnSelectorAll(
+						progress,
+						params.selector,
+						params.expression,
+					params.isFunction,
+					parseArgument(params.arg),
+					null,
+					params.isolatedContext
+				)
+			)
+		};
+	

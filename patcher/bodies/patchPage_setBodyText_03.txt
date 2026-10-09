@@ -1,0 +1,15 @@
+
+		if (this.routeInjecting || this.context().routeInjecting) return;
+		await this.route('**/*', async route => {
+			try {
+				if (route.request().resourceType() === 'document' && route.request().url().startsWith('http')) {
+						await route.fallback({ patchrightInitScript: true } as any);
+				} else {
+						await route.fallback();
+				}
+		} catch (error) {
+				await route.fallback();
+			}
+		});
+		this.routeInjecting = true;
+	

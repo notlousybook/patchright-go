@@ -1,0 +1,6 @@
+
+		const responseHeaders = headersObjectToArray(responsePayload.headers);
+		const fulfilledSetCookieHeaders = request._originalRequestRoute?._fulfilledSetCookieHeaders ?? [];
+		if (fulfilledSetCookieHeaders.length && !responseHeaders.some(header => header.name.toLowerCase() === 'set-cookie'))
+			responseHeaders.push(...fulfilledSetCookieHeaders);
+	

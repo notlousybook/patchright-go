@@ -1,0 +1,16 @@
+
+		if (overrides.url)
+			this._fallbackOverrides.url = overrides.url;
+		if (overrides.method)
+			this._fallbackOverrides.method = overrides.method;
+		if (overrides.headers)
+			this._fallbackOverrides.headers = overrides.headers;
+		if ((overrides as any).patchrightInitScript)
+			(this._fallbackOverrides as any).patchrightInitScript = true;
+		if (isString(overrides.postData))
+			this._fallbackOverrides.postDataBuffer = Buffer.from(overrides.postData, "utf-8");
+		else if (overrides.postData instanceof Buffer)
+			this._fallbackOverrides.postDataBuffer = overrides.postData;
+		else if (overrides.postData)
+			this._fallbackOverrides.postDataBuffer = Buffer.from(JSON.stringify(overrides.postData), "utf-8");
+	

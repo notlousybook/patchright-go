@@ -1,0 +1,5 @@
+
+		if (this._isDetached())
+			return null;
+		return (world === "main" ? this._iframeWorld || this._mainWorld : this._isolatedWorld) || null;
+	

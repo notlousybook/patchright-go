@@ -1,0 +1,33 @@
+
+			const frames = await this.resolveFramesForSelector(selector, options, scope);
+			let result: { frame: Frame, info: SelectorInfo, injected: JSHandle<InjectedScript>, scope?: ElementHandle } | null = null;
+			for (const resolved of frames) {
+				const getMatch = async () => {
+					const context = await resolved.frame.context(options.mainWorld ? 'main' : resolved.info.world);
+					const injected = await context.injectedScript();
+					if (frames.length > 1) {
+						let count = await injected.evaluate((injected, { info, scope }) => injected.querySelectorAll(info.parsed, scope || document).length, { info: resolved.info, scope: resolved.scope });
+						if (!count && !resolved.scope) {
+							const elements = await resolved.frame.querySelectorAll(nullProgress, stringifySelector(resolved.info.parsed));
+							count = elements.length;
+							for (const element of elements)
+								element.dispose();
+						}
+						if (!count)
+							return null;
+					}
+					return { ...resolved, injected };
+				};
+				const match = frames.length > 1 ? await resolved.frame.raceAgainstEvaluationStallingEvents(getMatch).catch(e => {
+					if (e instanceof EvaluationStalledError)
+						return null;
+					throw e;
+				}) : await getMatch();
+				if (!match)
+					continue;
+				if (result)
+					throw new NonRecoverableDOMError('frameLocator() matched elements in multiple frames.');
+				result = match;
+			}
+			return result;
+		

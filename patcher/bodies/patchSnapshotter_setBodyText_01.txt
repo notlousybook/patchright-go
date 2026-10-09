@@ -1,0 +1,11 @@
+
+		const { javaScriptEnabled } = this._context._options;
+		this._initScriptSource = `(${frameSnapshotStreamer})("${this._snapshotStreamer}", ${javaScriptEnabled || javaScriptEnabled === undefined})`;
+		this._initScript = true;
+		for (const page of this._context.pages())
+			this._onPage(page);
+		this._eventListeners = [
+			eventsHelper.addEventListener(this._context, BrowserContext.Events.Page, this._onPage.bind(this)),
+		];
+		await this._context.safeNonStallingEvaluateInAllFrames(this._initScriptSource, 'utility');
+	

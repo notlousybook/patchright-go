@@ -1,0 +1,4 @@
+
+		if (this._isMainFrame() && !this._crPage._browserContext._options.focusControl)
+			promises.push(this._client.send("Emulation.setFocusEmulationEnabled", { enabled: true }));
+	

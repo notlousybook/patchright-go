@@ -1,0 +1,1 @@
+this._eventListeners.push(eventsHelper.addEventListener(page, Page.Events.InternalFrameNavigatedToNewDocument, (frame: Frame) => this._onFrameNavigated(frame)));

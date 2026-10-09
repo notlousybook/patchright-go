@@ -1,0 +1,4 @@
+
+		for (const page of this.pages())
+			await (page.delegate as CRPage).removeExposedBindings();
+	

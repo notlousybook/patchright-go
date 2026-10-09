@@ -1,0 +1,19 @@
+
+		const exposePromises: Promise<void>[] = [];
+		const serialized = serializeAsCallArgument(arg, value => {
+			if (typeof value === 'function') {
+				const name = 'f' + createGuid();
+				exposePromises.push(expose(name, value));
+				return { fn: name, init: true };
+			}
+			return { fallThrough: value };
+		});
+		await Promise.all(exposePromises);
+		return `(() => {
+			if (globalThis.document?.currentScript)
+				return;
+			const module = {};
+			${rawUtilityScriptSource.source}
+			return new (module.exports.UtilityScript())(globalThis, false).evaluate(true, false, ${JSON.stringify(fun.toString())}, 1, ${JSON.stringify(serialized)});
+		})()`;
+	

@@ -1,0 +1,10 @@
+
+		const elements = !scope && !options.mainWorld && await frame.selectors._hasClosedShadowRoots()
+			? await frame.querySelectorAll(nullProgress, stringifySelector(info.parsed)) : undefined;
+		try {
+			${getResultBody}
+		} finally {
+			for (const element of elements || [])
+				element.dispose();
+		}
+	

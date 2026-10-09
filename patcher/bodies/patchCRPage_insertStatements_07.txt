@@ -1,0 +1,13 @@
+
+			var globalThis = await session._sendMayFail('Runtime.evaluate', {
+				expression: "globalThis",
+				serializationOptions: { serialization: "idOnly" }
+			});
+			if (globalThis && globalThis.result && globalThis.result.objectId) {
+				var globalThisObjId = globalThis.result.objectId;
+				var executionContextId = parseInt(globalThisObjId.split('.')[1], 10);
+				if (!isNaN(executionContextId)) {
+					worker.createExecutionContext(new CRExecutionContext(session, { id: executionContextId }));
+				}
+			}
+		

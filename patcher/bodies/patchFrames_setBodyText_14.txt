@@ -1,0 +1,48 @@
+
+		try {
+			const resolved = await progress.race(this.selectors.resolveInjectedForSelector(selector, options, scope));
+			if (!resolved)
+				return false;
+			const atomicResult = await progress.race(resolved.injected.evaluate((injected, { info, root }) => {
+				const element = injected.querySelector(info.parsed, root || document, info.strict);
+				return element ? { found: true, visible: injected.elementState(element, 'visible').matches } : { found: false, visible: false };
+			}, { info: resolved.info, root: resolved.frame === this ? scope : undefined }));
+			if (atomicResult.found)
+				return atomicResult.visible;
+
+			progress.log(`waiting for ${this._asLocator(selector)}`);
+			if (selector === ':scope') {
+				const scopeParentNode = (scope as any).parentNode || scope;
+				if (scopeParentNode instanceof dom.ElementHandle) {
+					return await scopeParentNode.evaluateInUtility(([injected, node, { scope: handle }]) => {
+						const state = handle ? injected.elementState(handle, "visible") : { matches: false, received: "error:notconnected" };
+						return state.matches;
+					}, { scope });
+				} else {
+					return await scopeParentNode.evaluate((injected, node, { scope: handle }) => {
+						const state = handle ? injected.elementState(handle, "visible") : { matches: false, received: "error:notconnected" };
+						return state.matches;
+					}, { scope });
+				}
+			} else {
+				return await this._retryWithoutProgress(progress, selector, { ...options, performActionPreChecks: false }, async (handle) => {
+					if (!handle)
+						return false;
+					if (handle.parentNode instanceof dom.ElementHandle) {
+						return await handle.parentNode.evaluateInUtility(([injected, node, { handle: handle2 }]) => {
+							const state = handle2 ? injected.elementState(handle2, "visible") : { matches: false, received: "error:notconnected" };
+							return state.matches;
+						}, { handle });
+					} else {
+						return await handle.parentNode.evaluate((injected, { handle: handle2 }) => {
+							const state = handle2 ? injected.elementState(handle2, "visible") : { matches: false, received: "error:notconnected" };
+							return state.matches;
+						}, { handle });
+					}
+				}, 'returnOnNotResolved', null as any) as boolean;
+			}
+		} catch (e) {
+			if (this.isNonRetriableError(e)) throw e;
+			return false;
+		}
+	

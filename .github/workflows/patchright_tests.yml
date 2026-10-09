@@ -1,0 +1,119 @@
+name: Patchright Chromium Tests
+
+on:
+  workflow_call:
+    inputs:
+      playwright_version:
+        description: 'Playwright version (tag) to test against, e.g. v1.60.0 or 1.60.0. If empty, latest release is used.'
+        required: false
+        type: string
+    outputs:
+      test_outcome:
+        description: Combined result for page/library test steps
+        value: ${{ jobs.run-patchright-tests.outputs.test_outcome }}
+  workflow_dispatch:
+    inputs:
+      playwright_version:
+        description: 'Playwright version (tag) to test against, e.g. v1.60.0 or 1.60.0. If empty, latest release is used.'
+        required: false
+        type: string
+  push:
+    branches: [main, dev-tests]
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  run-patchright-tests:
+    runs-on: ubuntu-latest
+    outputs:
+      test_outcome: ${{ steps.set_test_outcome.outputs.test_outcome }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      - name: Configure Fast APT Mirror
+        uses: vegardit/fast-apt-mirror.sh@v1
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Setup Node v24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Go Unit Tests
+        run: go test ./...
+
+      - name: Install Playwright Driver
+        run: |
+          branch_version="${{ inputs.playwright_version || github.event.inputs.playwright_version }}"
+          if [ -z "$branch_version" ]; then
+            response=$(curl --silent "https://api.github.com/repos/microsoft/playwright/releases/latest")
+            branch_version=$(echo "$response" | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/')
+          else
+            branch_version="v${branch_version#v}"
+          fi
+          go run ./cmd/patchright patch --playwright-dir playwright --version "$branch_version"
+
+      - name: Validate Patches Against Checkout
+        run: go test -tags checkout ./patcher/
+
+      - name: Generate Channels
+        # Script exits 1 when files are modified, which is expected
+        continue-on-error: true
+        run: |
+          cd playwright
+          npm ci
+          node utils/generate_channels.js
+
+      - name: Build Patchright Driver
+        run: |
+          cd playwright
+          npm run build
+
+      - name: Install Browser Dependencies
+        run: |
+          cd playwright
+          npx playwright install-deps
+
+      - name: Install Chromium and Chrome Browsers
+        run: |
+          cd playwright
+          npx playwright install chromium chrome
+
+      - name: Run Detection Smoke Test
+        id: test_detection
+        continue-on-error: ${{ github.event_name == 'workflow_call' }}
+        run: xvfb-run -a go test -tags e2e ./e2e/ -run TestDetectionSmoke
+
+      - name: Modify Tests for Patchright
+        run: go run ./cmd/patchright modify-tests --playwright-dir playwright --custom-tests utils/custom_tests
+
+      - name: Run Page Tests
+        id: test_page
+        continue-on-error: ${{ github.event_name == 'workflow_call' }}
+        run: |
+          cd playwright
+          PWTEST_MODE=driver xvfb-run -a npx playwright test --config=tests/library/playwright.config.ts --project=chromium-page --max-failures=0 --reporter=github --retries=3
+
+      - name: Run Library Tests
+        id: test_library
+        continue-on-error: ${{ github.event_name == 'workflow_call' }}
+        run: |
+          cd playwright
+          PWTEST_MODE=driver xvfb-run -a npx playwright test --config=tests/library/playwright.config.ts --project=chromium-library --max-failures=0 --reporter=github --retries=3
+
+      - name: Set Test Outcome
+        id: set_test_outcome
+        if: always()
+        run: |
+          if [ "${{ steps.test_detection.outcome }}" = "failure" ] || [ "${{ steps.test_page.outcome }}" = "failure" ] || [ "${{ steps.test_library.outcome }}" = "failure" ]; then
+            echo "test_outcome=failure" >> "$GITHUB_OUTPUT"
+          else
+            echo "test_outcome=success" >> "$GITHUB_OUTPUT"
+          fi

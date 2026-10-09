@@ -1,0 +1,18 @@
+
+		this._stopNetworkIdleTimer();
+		this._detachedScope.close(new Error('Frame was detached'));
+		for (const data of this._contextData.values()) {
+			if (data.context)
+				data.context.contextDestroyed('Frame was detached');
+			data.contextPromise.resolve({ destroyedReason: 'Frame was detached' });
+		}
+		if (this._mainWorld)
+			this._mainWorld.contextDestroyed('Frame was detached');
+		if (this._iframeWorld)
+			this._iframeWorld.contextDestroyed('Frame was detached');
+		if (this._isolatedWorld)
+			this._isolatedWorld.contextDestroyed('Frame was detached');
+		if (this._parentFrame)
+			this._parentFrame._childFrames.delete(this);
+		this._parentFrame = null;
+	

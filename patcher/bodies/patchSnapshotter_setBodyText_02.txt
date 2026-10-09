@@ -1,0 +1,7 @@
+
+		if (this._initScript) {
+			eventsHelper.removeEventListeners(this._eventListeners);
+			this._initScript = undefined;
+			this._initScriptSource = undefined;
+		}
+	

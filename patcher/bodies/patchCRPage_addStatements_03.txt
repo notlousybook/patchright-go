@@ -1,0 +1,27 @@
+
+		const functionBindings = this._page.allBindings().filter(binding => binding.noGlobal);
+		if (functionBindings.length) {
+			try {
+				const context = await this._page.frameManager.frame(framePayload.id)._context('main');
+				for (const binding of functionBindings)
+					binding.dispatchFunction(this._page, context).catch(() => {});
+			} catch { }
+		}
+		// patchright: For non-initial navigations, skip DOM cleanup since the document just changed
+		// and init script tags haven't been re-added yet. The _onLifecycleEvent("load") handler
+		// will perform cleanup after the page finishes loading.
+		if (!initial) {
+			try { await this._page.frameManager.frame(this._targetId)._context("utility") } catch { };
+			return;
+		}
+		var document = await this._client._sendMayFail("DOM.getDocument");
+		if (!document) return
+		var query = await this._client._sendMayFail("DOM.querySelectorAll", {
+			nodeId: document.root.nodeId,
+			selector: "[class=" + this._crPage.initScriptTag + "]"
+		});
+		if (!query) return
+		for (const nodeId of query.nodeIds) await this._client._sendMayFail("DOM.removeNode", { nodeId: nodeId });
+		// ensuring execution context
+		try { await this._page.frameManager.frame(this._targetId)._context("utility") } catch { };
+	

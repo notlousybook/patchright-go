@@ -1,0 +1,13 @@
+
+		// Page.enable can immediately emit a dialog for a newly opened popup, so handle it before enabling.
+		let initializingDialogs = this._isMainFrame();
+		if (initializingDialogs)
+			this._eventListeners.push(eventsHelper.addEventListener(this._client, 'Page.javascriptDialogOpening', (event: any) => {
+				if (!initializingDialogs)
+					return;
+				this._firstNonInitialNavigationCommittedFulfill();
+				this._page.frameManager.createDummyMainFrameIfNeeded();
+				this._crPage._reportAsNew().then(() => this._onDialog(event));
+			}));
+		const pageEnablePromise = this._client.send('Page.enable');
+	

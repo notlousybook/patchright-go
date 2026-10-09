@@ -1,0 +1,32 @@
+
+		if (this._networkId != event.networkId || !this._sessionManager._alreadyTrackedNetworkIds.has(event.networkId))
+			return;
+
+		const trackedNetworkId = event.networkId;
+		try {
+			if (event.resourceType !== 'Document')
+				return;
+
+			if (event.responseStatusCode >= 301 && event.responseStatusCode <= 308  || (event.redirectedRequestId && !event.responseStatusCode)) {
+				await this._session.send('Fetch.continueRequest', { requestId: event.requestId, interceptResponse: true });
+			} else {
+				const responseBody = await this._session.send('Fetch.getResponseBody', { requestId: event.requestId });
+				await this.fulfill({
+					headers: event.responseHeaders,
+					isBase64: true,
+					body: responseBody.body,
+					status: event.responseStatusCode,
+					interceptionId: event.requestId,
+					resourceType: event.resourceType,
+				});
+			}
+		} catch (error) {
+			if (error.message.includes("Can only get response body on HeadersReceived pattern matched requests.")) {
+				await this._session.send("Fetch.continueRequest", { requestId: event.requestId, interceptResponse: true });
+			} else {
+				await this._session._sendMayFail("Fetch.continueRequest", { requestId: event.requestId });
+			}
+		} finally {
+			this._sessionManager._alreadyTrackedNetworkIds.delete(trackedNetworkId);
+		}
+	

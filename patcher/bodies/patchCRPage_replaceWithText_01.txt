@@ -1,0 +1,4 @@
+
+		this._networkManager.setRequestInterception(true);
+		this.initScriptTag = crypto.randomBytes(20).toString('hex');
+	

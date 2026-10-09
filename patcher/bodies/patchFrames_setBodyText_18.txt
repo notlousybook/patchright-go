@@ -1,0 +1,9 @@
+
+		return this.raceAgainstEvaluationStallingEvents(async () => {
+			try { await this._context(world); } catch {}
+			const context = this._contextData.get(world)?.context;
+			if (!context)
+				throw new Error('Frame does not yet have the execution context');
+			return context.evaluateExpression(expression, { isFunction: false });
+		});
+	

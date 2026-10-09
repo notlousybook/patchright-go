@@ -1,0 +1,7 @@
+
+		if (!this._initScriptSource)
+			return;
+		try {
+			await frame.nonStallingEvaluateInExistingContext(this._initScriptSource, 'utility');
+		} catch (e) {}
+	

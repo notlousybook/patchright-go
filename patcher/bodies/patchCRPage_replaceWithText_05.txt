@@ -1,0 +1,4 @@
+
+		if (worldName && (worldName === 'main' || worldName === 'utility'))
+			frame.contextCreated(worldName, context);
+	

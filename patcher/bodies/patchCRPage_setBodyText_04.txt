@@ -1,0 +1,8 @@
+
+		const toRetain: string[] = [];
+		const toRemove: string[] = [];
+		for (const name of this._exposedBindingNames)
+			(name.startsWith('__pw_') ? toRetain : toRemove).push(name);
+		this._exposedBindingNames = toRetain;
+		await Promise.all(toRemove.map(name => this._client.send('Runtime.removeBinding', { name })));
+	

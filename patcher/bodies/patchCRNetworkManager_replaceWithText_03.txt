@@ -1,0 +1,6 @@
+
+				const pageDelegate = this._page?.delegate;
+				if (!frame && pageDelegate && requestWillBeSentEvent.frameId === pageDelegate._targetId) {
+					frame = this._page.frameManager.frameAttached(requestWillBeSentEvent.frameId, null);
+				}
+			
