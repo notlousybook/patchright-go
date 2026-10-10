@@ -31,12 +31,61 @@ type Instance struct {
 }
 
 // Run starts the Playwright driver (patched or stock) and wraps it.
+//
+// Two modes, be honest about which you're in:
+//   - patched driver (built via `patchright patch` + npm run build): full
+//     stealth. server-side patches do the heavy lifting (Runtime.enable
+//     avoidance, route injection, shadow DOM, bridge naming). use Patched()
+//     to check.
+//   - stock driver: wrapper-only partial stealth (inject route, switch
+//     policy, launch defaults). better than nothing, not undetectable.
 func Run(options ...*pw.RunOptions) (*Instance, error) {
 	p, err := pw.Run(options...)
 	if err != nil {
 		return nil, err
 	}
 	return &Instance{PW: p, injected: map[pw.BrowserContext]bool{}}, nil
+}
+
+// Patched reports whether the driver under this instance looks like a
+// patchright-patched driver. It launches a throwaway headless chromium,
+// evaluates in the page, and checks for the absence of stock-driver tells
+// plus the presence of patched-driver behavior. Returns false on any error
+// (unknown = assume stock, don't claim stealth you don't have).
+func (in *Instance) Patched() bool {
+	browser, err := in.PW.Chromium.Launch(pw.BrowserTypeLaunchOptions{
+		Headless: pw.Bool(true),
+		Args:     stealth.FilterChromiumSwitchesForLaunch(nil),
+	})
+	if err != nil {
+		return false
+	}
+	defer browser.Close()
+	page, err := browser.NewPage()
+	if err != nil {
+		return false
+	}
+	defer page.Close()
+	raw, err := page.Evaluate(`(() => ({
+		webdriver: navigator.webdriver,
+		pwGlobals: Object.getOwnPropertyNames(globalThis).filter(n => /^__(?:pw|playwright)/i.test(n)),
+	})())`)
+	if err != nil {
+		return false
+	}
+	m, ok := raw.(map[string]any)
+	if !ok {
+		return false
+	}
+	// Stock driver in default headless: webdriver is true. Patched driver:
+	// false with no leaked globals. Either signal failing means not patched.
+	if wd, _ := m["webdriver"].(bool); wd {
+		return false
+	}
+	if globals, _ := m["pwGlobals"].([]any); len(globals) != 0 {
+		return false
+	}
+	return true
 }
 
 // Stop shuts down the driver.

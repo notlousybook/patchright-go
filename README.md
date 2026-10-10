@@ -56,6 +56,13 @@ go run ./demo -headless       # no window
 go run ./demo -url https://example.com  # also check a live page
 ```
 
+## two modes (read this, it matters)
+
+there's no such thing as pure-client full stealth. every patchright flavor (python, nodejs, this) is a **patched driver** + a thin client. the stealth lives server-side: Runtime.enable avoidance, Fetch interception, shadow DOM CDP fallbacks, all that. a wrapper alone can't do any of it.
+
+- **patched driver mode (full stealth):** `patchright patch` a playwright checkout, `npm run build`, point the driver at it. everything in the stealth list below works. the demo prints `driver mode: PATCHED`.
+- **wrapper-only mode (partial stealth):** just `client` against the stock driver. you get the inject route, switch policy, launch defaults. better than nothing, not undetectable. the demo prints `driver mode: STOCK` and adjusts expectations (e.g. shadow DOM piercing won't work). `inst.Patched()` tells you which you're in, don't claim stealth you don't have.
+
 ## what's inside
 
 | package | what it do |
