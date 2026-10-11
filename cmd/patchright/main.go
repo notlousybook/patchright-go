@@ -36,6 +36,8 @@ func main() {
 		cmdRebrand(os.Args[2:])
 	case "diff-patch":
 		cmdDiffPatch(os.Args[2:])
+	case "driver-bundle":
+		cmdDriverBundle(os.Args[2:])
 	case "format":
 		cmdFormat(os.Args[2:])
 	default:
@@ -55,6 +57,7 @@ func usage() {
 	fmt.Fprintln(os.Stderr, "  modify-tests --playwright-dir DIR --custom-tests DIR [--dry-run]  rewrite upstream tests (modify_tests.ts)")
 	fmt.Fprintln(os.Stderr, "  rebrand --playwright-dir DIR                             rename packages to patchright* (patchright_rebranding.ts)")
 	fmt.Fprintln(os.Stderr, "  diff-patch --playwright-dir DIR [--output F]              write documentation patchright.patch (patch_file_updater.yml)")
+	fmt.Fprintln(os.Stderr, "  driver-bundle -o OUT.zip [--dir D]                       provision + zip a patched driver (release assets)")
 	fmt.Fprintln(os.Stderr, "  format [--check]                                        gofmt the repo (format-indentation.ts)")
 }
 

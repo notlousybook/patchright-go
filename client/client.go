@@ -1,6 +1,11 @@
-// Package client wraps playwright-go with the patchright behavior: route-based
-// init-script injection (InstallInjectRoute) + stealth launch defaults. works
-// against the patched driver, degrades gracefully on stock. no drama.
+// Package client is the one mode: full stealth, always.
+//
+// Run() auto-provisions the patched driver behind the scenes (see driver/:
+// stock driver zip download + in-place bundle patching, cached per version)
+// and wraps it with route-based init-script injection + stealth launch
+// defaults. no manual patch step, no stock fallback, no two modes. if the
+// patched driver can't be provisioned, Run errors — it will not silently
+// downgrade you to stock and let detectors eat you.
 package client
 
 import (
@@ -9,6 +14,7 @@ import (
 
 	pw "github.com/playwright-community/playwright-go"
 
+	"github.com/notlousybook/patchright-go/driver"
 	"github.com/notlousybook/patchright-go/stealth"
 )
 
@@ -30,17 +36,26 @@ type Instance struct {
 	injected map[pw.BrowserContext]bool
 }
 
-// Run starts the Playwright driver (patched or stock) and wraps it.
-//
-// Two modes, be honest about which you're in:
-//   - patched driver (built via `patchright patch` + npm run build): full
-//     stealth. server-side patches do the heavy lifting (Runtime.enable
-//     avoidance, route injection, shadow DOM, bridge naming). use Patched()
-//     to check.
-//   - stock driver: wrapper-only partial stealth (inject route, switch
-//     policy, launch defaults). better than nothing, not undetectable.
+// Run starts the PATCHED driver and wraps it. First call downloads the stock
+// driver zip once, applies the bundle stealth transforms in place, and caches
+// the result (see driver.Ensure). Pass your own &pw.RunOptions{DriverDirectory}
+// only if you built a patched driver yourself via `patchright patch` —
+// otherwise leave it empty and let provisioning handle it.
 func Run(options ...*pw.RunOptions) (*Instance, error) {
-	p, err := pw.Run(options...)
+	var opt *pw.RunOptions
+	if len(options) > 0 && options[0] != nil {
+		opt = options[0]
+	} else {
+		opt = &pw.RunOptions{}
+	}
+	if opt.DriverDirectory == "" {
+		dir, err := driver.Ensure()
+		if err != nil {
+			return nil, fmt.Errorf("provision patched driver: %w", err)
+		}
+		opt.DriverDirectory = dir
+	}
+	p, err := pw.Run(opt)
 	if err != nil {
 		return nil, err
 	}

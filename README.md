@@ -12,6 +12,10 @@ patchright takes stock `microsoft/playwright` and applies 47 stealth transforms 
 
 nothing is pinned btw. `patch` just grabs the latest playwright release unless you tell it otherwise. i hate pinned versions.
 
+#### oh and btw, about the driver version
+
+playwright-go v0.6000.0 hard-codes driver CLI **1.60.0** and refuses to launch anything else (its `isUpToDateDriver` checks the printed version). so `driver.Version` is v1.60.0, matching upstream's `patchright-core` npm publishing. bump the binding, bump that, and check `npm view patchright-core` has your version.
+
 > only chromium-based browsers are patched, same as upstream. firefox and webkit are not supported. sorry brah
 
 ## quick start
@@ -37,7 +41,7 @@ import (
     "github.com/notlousybook/patchright-go/client"
 )
 
-inst, _ := client.Run() // works with patched OR stock driver
+inst, _ := client.Run() // provisions the patched driver on first use
 defer inst.Stop()
 
 found := browsers.Default() // sniffs out your most used chromium install
@@ -56,26 +60,46 @@ go run ./demo -headless       # no window
 go run ./demo -url https://example.com  # also check a live page
 ```
 
-## two modes (read this, it matters)
+## one mode: full stealth, zero setup
 
-there's no such thing as pure-client full stealth. every patchright flavor (python, nodejs, this) is a **patched driver** + a thin client. the stealth lives server-side: Runtime.enable avoidance, Fetch interception, shadow DOM CDP fallbacks, all that. a wrapper alone can't do any of it.
+there's no manual patch step and no stock fallback. `client.Run()` auto-provisions the patched driver on first use and caches it per version. zero npm, zero node toolchain, zero brain cells:
 
-- **patched driver mode (full stealth):** `patchright patch` a playwright checkout, `npm run build`, point the driver at it. everything in the stealth list below works. the demo prints `driver mode: PATCHED`.
-- **wrapper-only mode (partial stealth):** just `client` against the stock driver. you get the inject route, switch policy, launch defaults. better than nothing, not undetectable. the demo prints `driver mode: STOCK` and adjusts expectations (e.g. shadow DOM piercing won't work). `inst.Patched()` tells you which you're in, don't claim stealth you don't have.
+```go
+inst, _ := client.Run() // that's it. patched driver, full stealth.
+defer inst.Stop()
+```
+
+### how the driver gets patched (no npm, trust me)
+
+three tiers, tried in order, first one that verifies wins:
+
+1. **our release asset** — CI-built, fully patched, bundled node (when it exists)
+2. **npm overlay** ← the good one: download the stock driver zip from playwright's CDN for the bundled node runtime, then overlay upstream's own `patchright-core` npm package on top of it. that package IS Vinyzu's CI output of the full 47-patch build, so this is real full stealth, not our interpretation of it
+3. **bundle transforms** — last resort: we string-transform the stock bundle ourselves in place. covers the big leaks (Runtime.enable, switch args, headless, swiftshader, bridge names) but not the protocol/shadow-root work
+
+tier 3 failing (cdn down, npm unreachable) is basically impossible since they're different networks, but if it happens you get a clear error instead of silent stock.
+
+**bonus robustness:** when playwright's driver CDN is down (it has been, recently, for days), stock playwright-go dies completely. we don't: the `patchright-core` npm tarball alone is enough to provision, and we point playwright-go at your system node via `PLAYWRIGHT_NODEJS_PATH`. run the demo and it'll tell you which tier + node source you got.
+
+```bash
+go run ./demo                 # tells you stealth source + node source
+go run ./demo -check-only     # no browser needed
+```
 
 ## what's inside
 
 | package | what it do |
 |---|---|
-| `patcher` | all 47 patches as go transforms + 115 verbatim JS replacement bodies embedded in the binary. validated 47/47 against real v1.60.0. protocol yaml mutations, CLI rebrand tables, `types.d.ts` updates, the works |
+| `patcher` | the full source-level patch pipeline (47 transforms over a playwright checkout, for building drivers yourself / CI). `driver/` is what normal users hit — same stealth, applied to the downloaded bundle instead of sources |
 | `stealth` | the runtime sneaky bits as testable go code: CSP relaxation, `<head>` injection placement, launch-switch policy, `f[0-9a-f]{32}` bridge naming |
-| `client` | `playwright-go` wrapper. `InstallInjectRoute` + stealth launch defaults. works against patched driver, degrades gracefully on stock |
+| `client` | the one mode. `Run()` auto-provisions the patched driver, wraps it with `InstallInjectRoute` + stealth launch defaults. no stock fallback, ever |
+| `driver` | self-provisioning patched driver. npm overlay of upstream's patched core, release-asset cache, in-place bundle transforms as fallback. `driver.Ensure()` returns a `DriverDirectory` for playwright-go, and it survives playwright CDN outages |
 | `browsers` | finds every chromium on your machine (install dirs, start menu + desktop shortcuts, registry App Paths, PATH, flatpak, playwright's own bundle) on windows/mac/linux, picks the one you actually use |
 | `demo` | the showcase. discovers browser, launches stealthy, dumps webdriver/globals/plugins/UA, proves init scripts + bindings + shadow DOM piercing work |
 | `testmods` | rewrites upstream playwright specs (`isolatedContext=false` insertion, `fixme()` markers, about:blank workarounds) |
 | `impact` | answers "did upstream break our patches": symbol table, diff parsing, change classification, markdown/JSON reports |
 | `testutil` + `e2e` | detection smoke test + ported custom specs (behind `e2e` tag, needs a real browser) |
-| `cmd/patchright` | the CLI. `patch`, `list`, `symbols`, `version-check`, `impact-check`, `modify-tests`, `rebrand`, `diff-patch`, `format` |
+| `cmd/patchright` | the CLI. `patch` (build your own driver from source), `list`, `symbols`, `version-check`, `impact-check`, `modify-tests`, `rebrand`, `diff-patch`, `driver-bundle` (make release assets), `format` |
 
 ## the stealth stuff (so u know it actually works)
 
