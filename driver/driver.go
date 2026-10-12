@@ -270,7 +270,8 @@ func hasBundledNode(dir string) bool {
 }
 
 // ensureNode guarantees a runnable node for the driver. Order:
-// existing PLAYWRIGHT_NODEJS_PATH, bundled node in dir, node on PATH.
+// bundled node in the dir, existing PLAYWRIGHT_NODEJS_PATH, node on PATH,
+// then our own node download from nodejs.org (zero-dependency last mile).
 func ensureNode(dir string) error {
 	if hasBundledNode(dir) {
 		// bundled node wins; clear any stale override that would beat it.
@@ -288,12 +289,10 @@ func ensureNode(dir string) error {
 		if err != nil {
 			return err
 		}
-		if err := os.Setenv("PLAYWRIGHT_NODEJS_PATH", abs); err != nil {
-			return err
-		}
-		return nil
+		return os.Setenv("PLAYWRIGHT_NODEJS_PATH", abs)
 	}
-	return nil
+	// Nothing on the machine: fetch our own so the client PC needs nothing.
+	return fetchNode(dir)
 }
 
 // NodeSource reports how the driver's node runtime is provided, for logging.

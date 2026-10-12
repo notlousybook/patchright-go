@@ -79,7 +79,14 @@ three tiers, tried in order, first one that verifies wins:
 
 tier 3 failing (cdn down, npm unreachable) is basically impossible since they're different networks, but if it happens you get a clear error instead of silent stock.
 
-**bonus robustness:** when playwright's driver CDN is down (it has been, recently, for days), stock playwright-go dies completely. we don't: the `patchright-core` npm tarball alone is enough to provision, and we point playwright-go at your system node via `PLAYWRIGHT_NODEJS_PATH`. run the demo and it'll tell you which tier + node source you got.
+### does the client pc need node? no.
+
+every runtime dependency resolves itself:
+
+- **normal case** (playwright CDN up): the stock driver zip we pull already **bundles node** with it. nothing to install.
+- **CDN outage case**: we provision from the `patchright-core` npm tarball alone, then grab **node ourselves** from nodejs.org (live-tested: download → extract → `node --version` proves out). playwright-go is pointed at it via `PLAYWRIGHT_NODEJS_PATH`.
+
+so a user with a bare `go run` machine and no node installed still gets full stealth. `driver.NodeSource()` tells you which one you got: `bundled`, `system:<path>`, or the dir it downloaded into.
 
 ```bash
 go run ./demo                 # tells you stealth source + node source

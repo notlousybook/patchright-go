@@ -2,6 +2,7 @@ package driver
 
 import (
 	"archive/tar"
+	"archive/zip"
 	"bytes"
 	"compress/gzip"
 	"io"
@@ -139,10 +140,162 @@ func TestNodeSource(t *testing.T) {
 	}
 }
 
-func TestEnsureNodeNoPanic(t *testing.T) {
+func TestEnsureNodeShortCircuits(t *testing.T) {
+	// bundled node present: must return without consulting the environment
+	// or the network.
 	dir := fakeBundle(t)
-	// must not panic regardless of whether node exists on PATH.
-	_ = ensureNode(dir)
+	if err := os.WriteFile(filepath.Join(dir, nodeFileName()), []byte("x"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := ensureNode(dir); err != nil {
+		t.Fatal(err)
+	}
+	// a pre-set override must also short-circuit (never download).
+	t.Setenv("PLAYWRIGHT_NODEJS_PATH", "dummy-node")
+	if err := ensureNode(dir); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// TestFetchNodeLive is the real end-to-end node self-download. Opt-in via
+// PATCHRIGHT_LIVE_NET=1 because it pulls ~25MB from nodejs.org.
+func TestFetchNodeLive(t *testing.T) {
+	if os.Getenv("PATCHRIGHT_LIVE_NET") != "1" {
+		t.Skip("set PATCHRIGHT_LIVE_NET=1 to run")
+	}
+	dir := t.TempDir()
+	if err := fetchNode(dir); err != nil {
+		t.Fatal(err)
+	}
+	if !hasBundledNode(dir) {
+		t.Fatal("node binary not installed into the driver dir")
+	}
+	// it must be a real, runnable node, not a truncated archive.
+	if err := verifyNodeRuns(filepath.Join(dir, nodeFileName())); err != nil {
+		t.Fatalf("fetched node is not runnable: %v", err)
+	}
+}
+
+func TestNodeDownloadURL(t *testing.T) {
+	got := nodeDownloadURL()
+	wantName, wantExt := nodePlatform()
+	if !strings.Contains(got, NodeVersion) {
+		t.Errorf("url %q missing version %s", got, NodeVersion)
+	}
+	if !strings.Contains(got, wantName+"."+wantExt) {
+		t.Errorf("url %q missing %s.%s", got, wantName, wantExt)
+	}
+}
+
+func TestNodeBinaryPath(t *testing.T) {
+	p := nodeBinaryPath()
+	if runtime.GOOS == "windows" {
+		if p != "/node.exe" {
+			t.Errorf("want /node.exe, got %q", p)
+		}
+		return
+	}
+	if p != "/bin/node" {
+		t.Errorf("want /bin/node, got %q", p)
+	}
+}
+
+// buildNodeTarball makes a nodejs.org-shaped tarball for extraction tests.
+func buildNodeTarball(t *testing.T, binaryContent string) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	gz := gzip.NewWriter(&buf)
+	tw := tar.NewWriter(gz)
+	base, ext := nodeArchiveDir()
+	nodeRel := base + nodeBinaryPath()
+	for _, name := range []string{
+		base + "/README.md",
+		nodeRel,
+		base + "/lib/node_modules/npm/bin/npm-cli.js",
+	} {
+		content := binaryContent
+		if name != nodeRel {
+			content = "junk"
+		}
+		if err := tw.WriteHeader(&tar.Header{
+			Name:     name,
+			Mode:     0o755,
+			Size:     int64(len(content)),
+			Typeflag: tar.TypeReg,
+		}); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := tw.Write([]byte(content)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	_ = ext
+	if err := tw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := gz.Close(); err != nil {
+		t.Fatal(err)
+	}
+	return buf.Bytes()
+}
+
+func TestExtractNodeFromTarGz(t *testing.T) {
+	dir := t.TempDir()
+	base, _ := nodeArchiveDir()
+	body := buildNodeTarball(t, "#!/fake node\n")
+	if err := extractNodeFromTarGz(body, base, dir); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(filepath.Join(dir, nodeFileName()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(got), "fake node") {
+		t.Errorf("wrong binary extracted: %q", got)
+	}
+	// npm/docs must NOT be carried over.
+	if _, err := os.Stat(filepath.Join(dir, "bin")); err == nil {
+		t.Error("should only keep the node binary, not the whole tree")
+	}
+}
+
+func TestExtractNodeFromZip(t *testing.T) {
+	// only meaningful where node ships zip archives (windows). Build the zip
+	// in-memory and assert the whole extraction path, so it's covered everywhere.
+	dir := t.TempDir()
+	base, _ := nodeArchiveDir()
+	want := base + nodeBinaryPath()
+
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	w, err := zw.Create(want)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w.Write([]byte("#!/fake node zip\n"))
+	zw.Create(base + "/lib/node_modules/npm/README.md")
+	zw.Close()
+
+	if err := extractNodeFromZip(buf.Bytes(), base, dir); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(filepath.Join(dir, nodeFileName()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(got), "fake node zip") {
+		t.Errorf("wrong binary extracted: %q", got)
+	}
+}
+
+func TestNodeArchiveDir(t *testing.T) {
+	base, ext := nodeArchiveDir()
+	if !strings.HasPrefix(base, "node-"+NodeVersion+"-") {
+		t.Errorf("bad archive dir root: %q", base)
+	}
+	if ext != "zip" && ext != "tar.gz" {
+		t.Errorf("bad ext: %q", ext)
+	}
 }
 
 func TestNodeFileName(t *testing.T) {
