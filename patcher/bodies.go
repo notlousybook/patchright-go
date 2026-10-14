@@ -52,20 +52,6 @@ func loadBodies() error {
 	return bodiesErr
 }
 
-// BodiesFor returns all extracted bodies for a patch function, in manifest order.
-func BodiesFor(patchFunc string) ([]BodyEntry, error) {
-	if err := loadBodies(); err != nil {
-		return nil, err
-	}
-	var out []BodyEntry
-	for _, e := range manifest {
-		if e.PatchFunc == patchFunc {
-			out = append(out, e)
-		}
-	}
-	return out, nil
-}
-
 // MustBody returns the embedded body text for a manifest body ID
 // (body file name without .txt), panicking on unknown IDs so patch wiring
 // mistakes surface loudly at startup.

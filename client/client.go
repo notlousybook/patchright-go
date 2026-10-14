@@ -10,10 +10,12 @@ package client
 
 import (
 	"fmt"
+	"os"
 	"sync"
 
 	pw "github.com/playwright-community/playwright-go"
 
+	"github.com/notlousybook/patchright-go/browsers"
 	"github.com/notlousybook/patchright-go/driver"
 	"github.com/notlousybook/patchright-go/stealth"
 )
@@ -62,6 +64,59 @@ func Run(options ...*pw.RunOptions) (*Instance, error) {
 	return &Instance{PW: p, injected: map[pw.BrowserContext]bool{}}, nil
 }
 
+// LaunchStealth is the deep launch seam: it owns the whole "give me a usable
+// stealthy browser page" sequence — browser selection (channel when the
+// discovered browser has one, executable path otherwise), launch with the
+// stealth switch policy, inject-route installation, and page acquisition.
+//
+// Everything that needs to drive a browser (the demo, the e2e suites, user
+// code) calls this, so a launch-behaviour change lands in exactly one module.
+//
+// picked may be nil to launch without local-browser discovery (driver's own
+// bundled chromium).
+func (in *Instance) LaunchStealth(picked *browsers.Found, headless bool) (pw.BrowserContext, pw.Page, error) {
+	dir, err := os.MkdirTemp("", "patchright-*")
+	if err != nil {
+		return nil, nil, err
+	}
+	opts := pw.BrowserTypeLaunchPersistentContextOptions{
+		Headless: pw.Bool(headless),
+		Args:     stealth.FilterChromiumSwitchesForLaunch(nil),
+	}
+	if picked != nil {
+		if picked.Browser.Channel != "" {
+			opts.Channel = pw.String(picked.Browser.Channel)
+		} else {
+			opts.ExecutablePath = pw.String(picked.Path)
+		}
+	}
+	ctx, err := in.PW.Chromium.LaunchPersistentContext(dir, opts)
+	if err != nil {
+		os.RemoveAll(dir)
+		return nil, nil, err
+	}
+	// The temp dir is owned by the context for its lifetime; playwright keeps
+	// using it, so it is intentionally not removed here.
+	if err := in.InstallInjectRoute(ctx); err != nil {
+		ctx.Close()
+		os.RemoveAll(dir)
+		return nil, nil, err
+	}
+	pages := ctx.Pages()
+	var page pw.Page
+	if len(pages) > 0 {
+		page = pages[0]
+	} else {
+		page, err = ctx.NewPage()
+		if err != nil {
+			ctx.Close()
+			os.RemoveAll(dir)
+			return nil, nil, err
+		}
+	}
+	return ctx, page, nil
+}
+
 // Patched reports whether the driver under this instance looks like a
 // patchright-patched driver. It launches a throwaway headless chromium,
 // evaluates in the page, and checks for the absence of stock-driver tells
@@ -106,49 +161,6 @@ func (in *Instance) Patched() bool {
 // Stop shuts down the driver.
 func (in *Instance) Stop() error {
 	return in.PW.Stop()
-}
-
-// StealthLaunchOptions returns launch options with Patchright's stealth
-// defaults applied: new headless is forced by the driver patch
-// (chromiumPatch), and automation-fingerprint switches are stripped at the
-// protocol level; Args here carries the user-visible remainder.
-func StealthLaunchOptions(headless bool, extraArgs []string) pw.BrowserTypeLaunchOptions {
-	args := stealth.FilterChromiumSwitchesForLaunch(extraArgs)
-	return pw.BrowserTypeLaunchOptions{
-		Headless: pw.Bool(headless),
-		Args:     args,
-	}
-}
-
-// LaunchChromium launches Chromium with stealth defaults.
-func (in *Instance) LaunchChromium(options ...pw.BrowserTypeLaunchOptions) (pw.Browser, error) {
-	opt := pw.BrowserTypeLaunchOptions{}
-	if len(options) > 0 {
-		opt = options[0]
-	}
-	if opt.Args == nil {
-		opt.Args = []string{}
-	}
-	// Apply switch policy client-side as well (harmless against patched driver).
-	opt.Args = stealth.FilterChromiumSwitchesForLaunch(opt.Args)
-	return in.PW.Chromium.Launch(opt)
-}
-
-// LaunchPersistentContext launches a persistent context with stealth defaults.
-func (in *Instance) LaunchPersistentContext(userDataDir string, options ...pw.BrowserTypeLaunchPersistentContextOptions) (pw.BrowserContext, error) {
-	opt := pw.BrowserTypeLaunchPersistentContextOptions{}
-	if len(options) > 0 {
-		opt = options[0]
-	}
-	ctx, err := in.PW.Chromium.LaunchPersistentContext(userDataDir, opt)
-	if err != nil {
-		return nil, err
-	}
-	if err := in.InstallInjectRoute(ctx); err != nil {
-		ctx.Close()
-		return nil, err
-	}
-	return ctx, nil
 }
 
 // InstallInjectRoute mirrors BrowserContext.installInjectRoute /

@@ -3,57 +3,17 @@
 package e2e
 
 import (
-	"os"
 	"testing"
 
 	pw "github.com/playwright-community/playwright-go"
 
-	"github.com/notlousybook/patchright-go/client"
 	"github.com/notlousybook/patchright-go/testutil"
 )
 
 // This file ports utils/custom_tests/*.spec.ts to Go:
 // execution-context.spec.ts, closed-shadow-root.spec.ts, init-script-binding.spec.ts.
-// Each test needs a patched driver + Chrome; otherwise it skips.
-
-// launchTestContext starts the driver and returns an instrumented persistent context.
-func launchTestContext(t *testing.T) (*client.Instance, pw.BrowserContext) {
-	t.Helper()
-	var runOpts []*pw.RunOptions
-	if dir := os.Getenv("PATCHRIGHT_DRIVER_PATH"); dir != "" {
-		runOpts = append(runOpts, &pw.RunOptions{DriverDirectory: dir})
-	}
-	inst, err := client.Run(runOpts...)
-	if err != nil {
-		t.Skipf("driver unavailable: %v", err)
-	}
-	t.Cleanup(func() { inst.Stop() })
-	ctx, err := inst.PW.Chromium.LaunchPersistentContext(t.TempDir(), pw.BrowserTypeLaunchPersistentContextOptions{
-		Channel:  pw.String(client.ChromiumChannel),
-		Headless: pw.Bool(true),
-	})
-	if err != nil {
-		t.Skipf("chrome channel unavailable: %v", err)
-	}
-	t.Cleanup(func() { ctx.Close() })
-	if err := inst.InstallInjectRoute(ctx); err != nil {
-		t.Fatal(err)
-	}
-	return inst, ctx
-}
-
-func firstPage(t *testing.T, ctx pw.BrowserContext) pw.Page {
-	t.Helper()
-	pages := ctx.Pages()
-	if len(pages) > 0 {
-		return pages[0]
-	}
-	page, err := ctx.NewPage()
-	if err != nil {
-		t.Fatal(err)
-	}
-	return page
-}
+// Each test needs a patched driver + a chromium browser; otherwise it skips.
+// Provenance (which driver tier ran) is reported by setup().
 
 func evalStr(t *testing.T, page pw.Page, script string) any {
 	t.Helper()
@@ -72,8 +32,8 @@ func TestIsolatedMainContextSeparation(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer srv.Close()
-	_, ctx := launchTestContext(t)
-	page := firstPage(t, ctx)
+	h := setup(t)
+	page := h.page
 
 	if _, err := page.Goto(srv.Origin + "/patchright-context.html"); err != nil {
 		t.Fatal(err)
@@ -107,8 +67,8 @@ func TestIsolatedMainContextSeparation(t *testing.T) {
 // TestClosedShadowRoots mirrors closed-shadow-root.spec.ts: representative
 // locator operations pierce closed shadow roots via the CDP fallback.
 func TestClosedShadowRoots(t *testing.T) {
-	_, ctx := launchTestContext(t)
-	page := firstPage(t, ctx)
+	h := setup(t)
+	page := h.page
 
 	if _, err := page.Evaluate(`() => {
 		document.body.innerHTML = '<div id="host"></div>';
@@ -193,10 +153,10 @@ func TestInitScriptBinding(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer srv.Close()
-	_, ctx := launchTestContext(t)
-	page := firstPage(t, ctx)
+	h := setup(t)
+	page := h.page
 
-	if err := ctx.AddInitScript(pw.Script{Content: ptr(`window['contextInitCount'] = (window['contextInitCount'] || 0) + 1`)}); err != nil {
+	if err := h.ctx.AddInitScript(pw.Script{Content: ptr(`window['contextInitCount'] = (window['contextInitCount'] || 0) + 1`)}); err != nil {
 		t.Fatal(err)
 	}
 	if err := page.AddInitScript(pw.Script{Content: ptr(`window['pageInitCount'] = (window['pageInitCount'] || 0) + 1`)}); err != nil {
@@ -237,7 +197,7 @@ func TestInitScriptBinding(t *testing.T) {
 	}
 
 	// Bindings across navigation.
-	if err := ctx.ExposeFunction("patchrightAdd", func(args ...any) any {
+	if err := h.ctx.ExposeFunction("patchrightAdd", func(args ...any) any {
 		a, _ := args[0].(float64)
 		b, _ := args[1].(float64)
 		return a + b

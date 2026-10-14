@@ -1,22 +1,21 @@
 //go:build e2e
 
 // Package e2e ports utils/detection_smoke_test.mjs to Go. It requires a
-// patched Patchright driver plus a Chromium/Chrome binary and is therefore
-// gated behind the `e2e` build tag:
+// patched Patchright driver plus a chromium browser and is therefore gated
+// behind the `e2e` build tag:
 //
 //	go test -tags e2e ./e2e/
 //
-// PATCHRIGHT_DRIVER_PATH may point at the patched driver directory; otherwise
-// the stock playwright-go driver is used (client-side stealth only).
+// setup() (in harness.go) provisions the driver, runs the one launch seam, and
+// logs the provenance of whatever driver it ended up with — so a green run
+// always states which tier it validated. Skip entirely with PATCHRIGHT_SKIP_E2E=1.
 package e2e
 
 import (
-	"os"
 	"testing"
 
 	pw "github.com/playwright-community/playwright-go"
 
-	"github.com/notlousybook/patchright-go/client"
 	"github.com/notlousybook/patchright-go/testutil"
 )
 
@@ -63,39 +62,8 @@ func TestDetectionSmoke(t *testing.T) {
 	}
 	defer srv.Close()
 
-	var runOpts []*pw.RunOptions
-	if dir := os.Getenv("PATCHRIGHT_DRIVER_PATH"); dir != "" {
-		runOpts = append(runOpts, &pw.RunOptions{DriverDirectory: dir})
-	}
-	inst, err := client.Run(runOpts...)
-	if err != nil {
-		t.Skipf("driver unavailable: %v", err)
-	}
-	defer inst.Stop()
-
-	userDataDir := t.TempDir()
-	ctx, err := inst.PW.Chromium.LaunchPersistentContext(userDataDir, pw.BrowserTypeLaunchPersistentContextOptions{
-		Channel:  pw.String(client.ChromiumChannel),
-		Headless: pw.Bool(false),
-	})
-	if err != nil {
-		t.Skipf("chrome channel unavailable: %v", err)
-	}
-	defer ctx.Close()
-	if err := inst.InstallInjectRoute(ctx); err != nil {
-		t.Fatal(err)
-	}
-
-	pages := ctx.Pages()
-	var page pw.Page
-	if len(pages) > 0 {
-		page = pages[0]
-	} else {
-		page, err = ctx.NewPage()
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
+	h := setup(t)
+	ctx, page := h.ctx, h.page
 	if _, err := page.Goto(srv.Origin); err != nil {
 		t.Fatal(err)
 	}

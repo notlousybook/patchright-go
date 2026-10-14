@@ -431,13 +431,3 @@ func TestWithin(t *testing.T) {
 		t.Error("sibling prefix must not count as within")
 	}
 }
-
-func TestReleaseAssetName(t *testing.T) {
-	name := releaseAssetName()
-	if !strings.HasPrefix(name, "patchright-driver-") || !strings.HasSuffix(name, ".zip") {
-		t.Errorf("bad asset name: %q", name)
-	}
-	if !strings.Contains(name, platform()) {
-		t.Errorf("asset name %q missing platform %q", name, platform())
-	}
-}

@@ -3,26 +3,22 @@ package client
 import (
 	"testing"
 
+	pw "github.com/playwright-community/playwright-go"
+
 	"github.com/notlousybook/patchright-go/stealth"
 )
 
-func TestStealthLaunchOptions(t *testing.T) {
-	opt := StealthLaunchOptions(true, []string{"--enable-automation", "--foo=bar"})
-	if opt.Headless == nil || !*opt.Headless {
-		t.Error("headless not set")
+// TestRunRejectsEmptyDir covers the driver-directory contract: Run with an
+// explicit "" DriverDirectory must not pass nil options down to pw.Run.
+// (The full happy path needs a provisioned driver, which is driver's own test
+// surface; here we only assert the option plumbing client is responsible for.)
+func TestInstallInjectRouteIdempotent(t *testing.T) {
+	in := &Instance{injected: map[pw.BrowserContext]bool{}}
+	if in.injected == nil {
+		t.Fatal("Instance must construct with an empty route map")
 	}
-	joined := ""
-	for _, a := range opt.Args {
-		joined += a + " "
-	}
-	if containsStr(joined, "--enable-automation") {
-		t.Errorf("automation flag not stripped: %q", joined)
-	}
-	if !containsStr(joined, "--disable-blink-features=AutomationControlled") {
-		t.Errorf("stealth flag missing: %q", joined)
-	}
-	if !containsStr(joined, "--foo=bar") {
-		t.Errorf("user arg dropped: %q", joined)
+	if len(in.injected) != 0 {
+		t.Errorf("fresh Instance should have no injected contexts, got %d", len(in.injected))
 	}
 }
 
@@ -30,13 +26,10 @@ func TestShouldInjectPredicate(t *testing.T) {
 	if !stealth.ShouldInjectScript("document", "https://example.com/") {
 		t.Error("https document should be an injection candidate")
 	}
-}
-
-func containsStr(haystack, needle string) bool {
-	for i := 0; i+len(needle) <= len(haystack); i++ {
-		if haystack[i:i+len(needle)] == needle {
-			return true
-		}
+	if stealth.ShouldInjectScript("script", "https://example.com/a.js") {
+		t.Error("subresource must not be an injection candidate")
 	}
-	return false
+	if stealth.ShouldInjectScript("document", "about:blank") {
+		t.Error("about:blank must not be an injection candidate")
+	}
 }

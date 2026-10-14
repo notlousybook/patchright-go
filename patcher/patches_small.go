@@ -34,6 +34,24 @@ var SwitchesToDisable = []string{
 // StealthSwitch mirrors the single added switch.
 const StealthSwitch = "'--disable-blink-features=AutomationControlled'"
 
+// RemovedSwitchFlags is the single owner of the chromium anti-fingerprint
+// switch policy. Everything that needs the flag set (stealth's launch filter,
+// driver/bundle.go's bundle transforms, this package's own source patch)
+// derives from here, so adding a flag is a one-line change in one module.
+var RemovedSwitchFlags = flagSetFrom(SwitchesToDisable)
+
+// flagSetFrom normalizes the TS-source fragments into bare runtime flags,
+// preserving order and dropping anything that is not a plain `--flag`.
+func flagSetFrom(entries []string) []string {
+	out := make([]string, 0, len(entries))
+	for _, e := range entries {
+		if f := bareFlag(e); f != "" {
+			out = append(out, f)
+		}
+	}
+	return out
+}
+
 // bareFlag normalizes a switchesToDisable entry (a TS source fragment) to the
 // bare runtime flag, e.g. `assistantMode ? ” : '--enable-automation'` ->
 // `--enable-automation`.

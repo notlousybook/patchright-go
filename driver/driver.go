@@ -40,10 +40,6 @@ var execLookPath = exec.LookPath
 // patchright-core actually publishes that version (npm view patchright-core).
 const Version = "v1.60.0"
 
-// ModuleVersion is this module's own release line, used to locate the
-// prebuilt driver asset tag (v + ModuleVersion). Bump on release.
-const ModuleVersion = "1.1.0"
-
 // mirrors, same as playwright-go's.
 var mirrors = []string{
 	"https://playwright.azureedge.net",
@@ -84,8 +80,6 @@ func CacheDir() (string, error) {
 type Provenance string
 
 const (
-	// SourceReleaseAsset: our CI-built asset (fully patched, bundled node).
-	SourceReleaseAsset Provenance = "release-asset"
 	// SourceNpmOverlay: stock CDN zip + upstream patchright-core overlay
 	// (fully patched, bundled node).
 	SourceNpmOverlay Provenance = "npm-overlay"
@@ -93,9 +87,34 @@ const (
 	// needs a system node).
 	SourceNpmOnly Provenance = "npm-only"
 	// SourceBundleTransforms: stock + our own bundle string transforms
-	// (partial stealth: the big leaks, no protocol/shadow-root work).
+	// (partial stealth: the big leaks, no protocol/shadow-root work). Only
+	// reached when npm AND the playwright CDN are both unreachable.
 	SourceBundleTransforms Provenance = "bundle-transforms"
 )
+
+// FullStealth reports whether this provenance carries the complete patch set
+// (the upstream-built one) rather than our offline approximation. Callers that
+// care about detection exposure should branch on this.
+func (p Provenance) FullStealth() bool {
+	return p == SourceNpmOverlay || p == SourceNpmOnly
+}
+
+// Describe renders provenance for human output, calling out the degraded case
+// explicitly so a partial-stealth session can never be mistaken for a full one.
+func (p Provenance) Describe() string {
+	switch p {
+	case SourceNpmOverlay:
+		return "npm-overlay (full stealth, bundled node)"
+	case SourceNpmOnly:
+		return "npm-only (full stealth, system node)"
+	case SourceBundleTransforms:
+		return "bundle-transforms (PARTIAL stealth: big leaks only, no protocol/shadow-root work)"
+	}
+	if p == "" {
+		return "unknown (not provisioned through driver)"
+	}
+	return string(p)
+}
 
 // stampFile holds "<hash>\n<provenance>\n". The hash covers version +
 // platform + transform revision + strategy, so a strategy change re-provisions.
@@ -129,15 +148,6 @@ func Ensure() (string, error) {
 		return "", err
 	}
 	return dir, nil
-}
-
-// MustEnsure is Ensure that panics on error (for init-time setup).
-func MustEnsure() string {
-	dir, err := Ensure()
-	if err != nil {
-		panic(err)
-	}
-	return dir
 }
 
 func isPatched(dir string) (bool, error) {
@@ -176,17 +186,9 @@ func provision(dir string) error {
 		return err
 	}
 
-	// 1. Our own release asset (CI-built, fully patched, bundled node).
-	if body, err := downloadReleaseAsset(); err == nil {
-		if err := unzip(body, dir); err == nil && verifyBundle(dir) == nil {
-			return finish(dir, SourceReleaseAsset)
-		}
-		reset(dir)
-	}
-
-	// 2. Stock driver zip from the CDN (gives us the bundled node binary)
+	// 1. Stock driver zip from the CDN (gives us the bundled node binary)
 	//    with upstream's patched package/ tree overlaid on top.
-	//    FULL stealth + bundled node.
+	//    FULL stealth + bundled node. This is the normal path.
 	if body, err := downloadDriver(); err == nil {
 		if err := unzip(body, dir); err == nil {
 			if err := fetchPatchrightCoreTarball(filepath.Join(dir, "package")); err == nil && verifyBundle(dir) == nil {
@@ -196,8 +198,8 @@ func provision(dir string) error {
 		reset(dir)
 	}
 
-	// 3. CDN outage? npm alone still works: the fully patched package/ tree
-	//    needs no CDN, only a node runtime, which comes from the system.
+	// 2. CDN outage? npm alone still works: the fully patched package/ tree
+	//    needs no CDN, only a node runtime, which we then fetch ourselves.
 	//    This is why we're more robust than stock playwright-go, which dies
 	//    the moment its driver CDN is down.
 	if err := fetchPatchrightCoreTarball(filepath.Join(dir, "package")); err == nil && verifyBundle(dir) == nil {
@@ -205,7 +207,7 @@ func provision(dir string) error {
 	}
 	reset(dir)
 
-	// 4. Last resort: stock CDN + our own in-place bundle transforms.
+	// 3. Last resort: stock CDN + our own in-place bundle transforms.
 	//    Partial stealth, but works with no npm and no upstream tarball.
 	body, err := downloadDriver()
 	if err != nil {
@@ -337,38 +339,6 @@ func verifyBundle(dir string) error {
 		return fmt.Errorf("no stealth markers in prebuilt bundle")
 	}
 	return nil
-}
-
-// releaseAssetName is the per-platform prebuilt bundle asset name, e.g.
-// patchright-driver-1.62.0-win32_x64.zip.
-func releaseAssetName() string {
-	return fmt.Sprintf("patchright-driver-%s-%s.zip", strings.TrimPrefix(Version, "v"), platform())
-}
-
-// downloadReleaseAsset fetches the prebuilt patched bundle for this version
-// from the patchright-go GitHub release. Override repo via
-// PATCHRIGHT_GO_REPO (default notlousybook/patchright-go), tag via
-// PATCHRIGHT_GO_TAG (default v + module version below).
-func downloadReleaseAsset() ([]byte, error) {
-	repo := os.Getenv("PATCHRIGHT_GO_REPO")
-	if repo == "" {
-		repo = "notlousybook/patchright-go"
-	}
-	tag := os.Getenv("PATCHRIGHT_GO_TAG")
-	if tag == "" {
-		tag = "v" + ModuleVersion
-	}
-	u := fmt.Sprintf("https://github.com/%s/releases/download/%s/%s", repo, tag, releaseAssetName())
-	client := &http.Client{Timeout: 10 * time.Minute}
-	resp, err := client.Get(u)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("%s: %s", u, resp.Status)
-	}
-	return io.ReadAll(resp.Body)
 }
 
 func driverURLs() []string {

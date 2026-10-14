@@ -45,10 +45,9 @@ inst, _ := client.Run() // provisions the patched driver on first use
 defer inst.Stop()
 
 found := browsers.Default() // sniffs out your most used chromium install
-ctx, _ := inst.PW.Chromium.LaunchPersistentContext(dir,
-    pw.BrowserTypeLaunchPersistentContextOptions{ExecutablePath: &found.Path})
-inst.InstallInjectRoute(ctx) // route-based init script injection, no Runtime.enable
-ctx.AddInitScript(pw.Script{Content: pw.String("window.cool = true")})
+ctx, page, _ := inst.LaunchStealth(found, false) // one seam: selection + route + page
+page.Goto("https://example.com")
+page.AddInitScript(pw.Script{Content: pw.String("window.cool = true")})
 ```
 
 or even lazier, just run the demo:
@@ -73,9 +72,14 @@ defer inst.Stop()
 
 three tiers, tried in order, first one that verifies wins:
 
-1. **our release asset** — CI-built, fully patched, bundled node (when it exists)
-2. **npm overlay** ← the good one: download the stock driver zip from playwright's CDN for the bundled node runtime, then overlay upstream's own `patchright-core` npm package on top of it. that package IS Vinyzu's CI output of the full 47-patch build, so this is real full stealth, not our interpretation of it
-3. **bundle transforms** — last resort: we string-transform the stock bundle ourselves in place. covers the big leaks (Runtime.enable, switch args, headless, swiftshader, bridge names) but not the protocol/shadow-root work
+1. **npm overlay** ← the normal path: download the stock driver zip from playwright's CDN for the bundled node runtime, then overlay upstream's own `patchright-core` npm package on top of it. that package IS Vinyzu's CI output of the full 47-patch build, so this is real full stealth, not our interpretation of it
+2. **npm-only** — CDN outage? the `patchright-core` tarball alone is enough, and we fetch **node ourselves** from nodejs.org (live-tested: download → extract → `node --version` proves out)
+3. **bundle transforms** — last resort: we string-transform the stock bundle ourselves in place. covers the big leaks (Runtime.enable, switch args, headless, swiftshader, bridge names) but not the protocol/shadow-root work. `driver.Source(dir).FullStealth()` tells you when you've landed here
+
+```go
+inst, _ := client.Run()
+defer inst.Stop()
+```
 
 tier 3 failing (cdn down, npm unreachable) is basically impossible since they're different networks, but if it happens you get a clear error instead of silent stock.
 
@@ -99,14 +103,14 @@ go run ./demo -check-only     # no browser needed
 |---|---|
 | `patcher` | the full source-level patch pipeline (47 transforms over a playwright checkout, for building drivers yourself / CI). `driver/` is what normal users hit — same stealth, applied to the downloaded bundle instead of sources |
 | `stealth` | the runtime sneaky bits as testable go code: CSP relaxation, `<head>` injection placement, launch-switch policy, `f[0-9a-f]{32}` bridge naming |
-| `client` | the one mode. `Run()` auto-provisions the patched driver, wraps it with `InstallInjectRoute` + stealth launch defaults. no stock fallback, ever |
-| `driver` | self-provisioning patched driver. npm overlay of upstream's patched core, release-asset cache, in-place bundle transforms as fallback. `driver.Ensure()` returns a `DriverDirectory` for playwright-go, and it survives playwright CDN outages |
+| `client` | the one mode + the one launch seam. `Run()` auto-provisions the patched driver; `LaunchStealth()` owns browser selection, switch policy, inject route and page acquisition in one place |
+| `driver` | self-provisioning patched driver: npm overlay of upstream's patched core, npm-only outage path (with node self-download), in-place bundle transforms as last resort. `driver.Ensure()` returns a `DriverDirectory` for playwright-go |
 | `browsers` | finds every chromium on your machine (install dirs, start menu + desktop shortcuts, registry App Paths, PATH, flatpak, playwright's own bundle) on windows/mac/linux, picks the one you actually use |
-| `demo` | the showcase. discovers browser, launches stealthy, dumps webdriver/globals/plugins/UA, proves init scripts + bindings + shadow DOM piercing work |
+| `demo` | the showcase. discovers browser, launches stealthy, dumps webdriver/globals/plugins/UA, proves init scripts + bindings + shadow DOM piercing work. reports which driver tier ran |
 | `testmods` | rewrites upstream playwright specs (`isolatedContext=false` insertion, `fixme()` markers, about:blank workarounds) |
 | `impact` | answers "did upstream break our patches": symbol table, diff parsing, change classification, markdown/JSON reports |
-| `testutil` + `e2e` | detection smoke test + ported custom specs (behind `e2e` tag, needs a real browser) |
-| `cmd/patchright` | the CLI. `patch` (build your own driver from source), `list`, `symbols`, `version-check`, `impact-check`, `modify-tests`, `rebrand`, `diff-patch`, `driver-bundle` (make release assets), `format` |
+| `testutil` + `e2e` | detection smoke test + ported custom specs (behind `e2e` tag). the e2e harness logs driver provenance and warns loudly on partial stealth |
+| `cmd/patchright` | the CLI. `patch` (build your own driver from source), `list`, `symbols`, `version-check`, `impact-check`, `modify-tests`, `rebrand`, `diff-patch`, `format` |
 
 ## the stealth stuff (so u know it actually works)
 

@@ -10,23 +10,13 @@ import (
 // runtime launch-arg lists (bare `--flag` strings, as Playwright's
 // BrowserTypeLaunchOptions.Args carries them). Flags the driver patch removes
 // are dropped; the AutomationControlled blink-feature disable is appended.
+//
+// The flag set is owned by patcher.RemovedSwitchFlags — this function only
+// applies it, it does not carry its own copy.
 func FilterChromiumSwitchesForLaunch(args []string) []string {
-	disabled := map[string]bool{}
-	for _, s := range patcher.SwitchesToDisable {
-		flag := s
-		if i := strings.Index(flag, "'--"); i >= 0 {
-			flag = flag[i+1:]
-			if j := strings.Index(flag, "'"); j >= 0 {
-				flag = flag[:j]
-			}
-		}
-		if strings.HasPrefix(flag, "--") {
-			disabled[flag] = true
-		}
-	}
 	out := make([]string, 0, len(args)+1)
 	for _, a := range args {
-		if disabled[a] {
+		if isDisabledFlag(a) {
 			continue
 		}
 		out = append(out, a)
@@ -38,4 +28,13 @@ func FilterChromiumSwitchesForLaunch(args []string) []string {
 		}
 	}
 	return append(out, stealth)
+}
+
+func isDisabledFlag(flag string) bool {
+	for _, f := range patcher.RemovedSwitchFlags {
+		if f == flag {
+			return true
+		}
+	}
+	return false
 }

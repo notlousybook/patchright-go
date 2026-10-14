@@ -2,7 +2,6 @@ package driver
 
 import (
 	"archive/tar"
-	"archive/zip"
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
@@ -15,21 +14,19 @@ import (
 	"time"
 )
 
-// This file implements the FULL stealth path: instead of transforming the
+// This file implements the FULL stealth path: rather than transforming the
 // stock bundle ourselves (bundle.go), we overlay the prebuilt patched
 // `package/` tree from the patchright-core npm package (which is Vinyzu's CI
 // output of the full 47-patch source pipeline) onto a stock driver zip.
 //
 // Why npm: patchright's CI publishes the patched playwright-core as
-// patchright-core on npm (package/cli.js + package/lib/** — exactly the driver
-// zip layout). Overlaying it onto the stock zip (which carries the bundled
-// node binary we can't build) gives us a full-stealth patched driver with no
-// npm runtime, no playwright source build, pure downloads.
+// patchright-core on npm (package/cli.js + package/lib/** — exactly the
+// driver zip layout). Overlaying it onto the stock zip (which carries the
+// bundled node binary we can't build) gives us a full-stealth patched driver
+// with no npm runtime, no playwright source build, pure downloads.
 //
-// Fallback chain in provision():
-//  1. our own release asset (CI-built, fully patched)
-//  2. npm overlay (patchright-core)          <- full stealth
-//  3. stock + in-place bundle transforms     <- partial stealth, tested
+// The fallback chain lives in provision() in driver.go; this file is just the
+// npm side of it.
 
 // npmRegistry is the patchright-core source. Override for testing.
 var npmRegistry = "https://registry.npmjs.org"
@@ -145,35 +142,6 @@ func fetchPackument() (*npmPackument, error) {
 	return &p, nil
 }
 
-// overlayPatchrightCore provisions a FULL stealth driver: stock zip for the
-// node binary + skeleton, patchright-core's package tree on top.
-func overlayPatchrightCore(dir string) error {
-	if err := unzipMust(dir, downloadDriver); err != nil {
-		return err
-	}
-	pkgDir := filepath.Join(dir, "package")
-	if err := fetchPatchrightCoreTarball(pkgDir); err != nil {
-		return err
-	}
-	return verifyBundle(dir)
-}
-
-// provisionNpmOnly builds a driver dir from the patchright-core tarball alone,
-// with no CDN involved. Used when Microsoft's driver CDN is down; the caller
-// must supply node via PLAYWRIGHT_NODEJS_PATH or PATH.
-func provisionNpmOnly(dir string) error {
-	return fetchPatchrightCoreTarball(filepath.Join(dir, "package"))
-}
-
-// unzipMust downloads a body and unzips it into dir (used once per strategy).
-func unzipMust(dir string, download func() ([]byte, error)) error {
-	body, err := download()
-	if err != nil {
-		return err
-	}
-	return unzip(body, dir)
-}
-
 // within guards path traversal.
 func within(root, target string) bool {
 	rootClean := filepath.Clean(root)
@@ -195,9 +163,4 @@ func httpGet(url string, timeout time.Duration) ([]byte, error) {
 		return nil, fmt.Errorf("%s: %s", url, resp.Status)
 	}
 	return io.ReadAll(resp.Body)
-}
-
-// zipReaderFor exposes the zip reader for tests.
-func zipReaderFor(body []byte) (*zip.Reader, error) {
-	return zip.NewReader(bytes.NewReader(body), int64(len(body)))
 }

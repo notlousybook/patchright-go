@@ -259,19 +259,6 @@ func regexpReplace(text, pattern, repl string) (string, error) {
 	return re.ReplaceAllString(text, repl), nil
 }
 
-// between extracts text between start and end markers (first match).
-func between(text, start, end string) (string, error) {
-	i := strings.Index(text, start)
-	if i < 0 {
-		return text, fmt.Errorf("start anchor not found: %q", truncate(start))
-	}
-	j := strings.Index(text[i+len(start):], end)
-	if j < 0 {
-		return text, fmt.Errorf("end anchor not found: %q", truncate(end))
-	}
-	return text[i+len(start) : i+len(start)+j], nil
-}
-
 // braceBlockEnd returns the index just past the matching closing brace for the
 // opening brace at openIdx. The scan skips strings, template literals
 // (including ${} interpolation), regex literals, and line/block comments.

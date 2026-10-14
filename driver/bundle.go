@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/notlousybook/patchright-go/patcher"
 )
 
 // bundleTransform is one verified string replacement against the built driver
@@ -41,22 +43,11 @@ func injectedFiles() []string {
 func bundleTransforms() []bundleTransform {
 	// Automation switches: the built chromiumSwitches array keeps the flag
 	// literals. Strip the snitches, add the blink-feature disable.
-	disable := []string{
-		"--enable-automation",
-		"--disable-popup-blocking",
-		"--disable-component-update",
-		"--disable-default-apps",
-		"--disable-extensions",
-		"--disable-client-side-phishing-detection",
-		"--disable-component-extensions-with-background-pages",
-		"--allow-pre-commit-input",
-		"--disable-ipc-flooding-protection",
-		"--metrics-recording-only",
-		"--unsafely-disable-devtools-self-xss-warnings",
-		"--disable-back-forward-cache",
-	}
+	//
+	// The flag set is owned by patcher.RemovedSwitchFlags; this only turns it
+	// into bundle-level string pairs. Do not hand-maintain a second copy here.
 	var switchPairs [][2]string
-	for _, flag := range disable {
+	for _, flag := range patcher.RemovedSwitchFlags {
 		// esbuild keeps both quote styles depending on context; cover both.
 		switchPairs = append(switchPairs, [2]string{"'" + flag + "'", "''"})
 		switchPairs = append(switchPairs, [2]string{`"` + flag + `"`, `""`})
