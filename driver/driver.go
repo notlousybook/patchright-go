@@ -84,31 +84,25 @@ const (
 	// (fully patched, bundled node).
 	SourceNpmOverlay Provenance = "npm-overlay"
 	// SourceNpmOnly: upstream patchright-core alone, no CDN (fully patched,
-	// needs a system node).
+	// needs a node runtime, fetched from nodejs.org when absent).
 	SourceNpmOnly Provenance = "npm-only"
-	// SourceBundleTransforms: stock + our own bundle string transforms
-	// (partial stealth: the big leaks, no protocol/shadow-root work). Only
-	// reached when npm AND the playwright CDN are both unreachable.
-	SourceBundleTransforms Provenance = "bundle-transforms"
 )
 
-// FullStealth reports whether this provenance carries the complete patch set
-// (the upstream-built one) rather than our offline approximation. Callers that
-// care about detection exposure should branch on this.
+// FullStealth reports whether this provenance carries the complete upstream
+// patch set. Both surviving tiers do, so this is false only for "" (an
+// unprovisioned dir) — it exists as a guard so a future degraded tier cannot
+// silently claim full stealth by omission.
 func (p Provenance) FullStealth() bool {
 	return p == SourceNpmOverlay || p == SourceNpmOnly
 }
 
-// Describe renders provenance for human output, calling out the degraded case
-// explicitly so a partial-stealth session can never be mistaken for a full one.
+// Describe renders provenance for human output.
 func (p Provenance) Describe() string {
 	switch p {
 	case SourceNpmOverlay:
 		return "npm-overlay (full stealth, bundled node)"
 	case SourceNpmOnly:
-		return "npm-only (full stealth, system node)"
-	case SourceBundleTransforms:
-		return "bundle-transforms (PARTIAL stealth: big leaks only, no protocol/shadow-root work)"
+		return "npm-only (full stealth, node self-downloaded)"
 	}
 	if p == "" {
 		return "unknown (not provisioned through driver)"
@@ -125,12 +119,9 @@ func stampFile(dir string) string {
 // stampContent hashes version + platform + patcher revision + strategy so a
 // new patchright-go release re-patches instead of reusing a stale bundle.
 func stampContent(source Provenance) string {
-	sum := sha256.Sum256([]byte(Version + "|" + platform() + "|" + string(source) + "|" + bundlePatchRev))
+	sum := sha256.Sum256([]byte(Version + "|" + platform() + "|" + string(source)))
 	return hex.EncodeToString(sum[:])
 }
-
-// bundlePatchRev bumps whenever bundleTransforms changes.
-const bundlePatchRev = "1"
 
 // Ensure returns a DriverDirectory holding a PATCHED driver, downloading and
 // patching on first use. Pass through to playwright-go RunOptions:
@@ -173,12 +164,6 @@ func isPatched(dir string) (bool, error) {
 	return lines[0] == stampContent(source), nil
 }
 
-// ProvisionTo provisions a patched driver into an explicit directory.
-// It's Ensure for a caller-chosen dir (CI uses it to build release assets).
-func ProvisionTo(dir string) error {
-	return provision(dir)
-}
-
 func provision(dir string) error {
 	// start clean: a stale dir poisons everything.
 	os.RemoveAll(dir)
@@ -207,21 +192,10 @@ func provision(dir string) error {
 	}
 	reset(dir)
 
-	// 3. Last resort: stock CDN + our own in-place bundle transforms.
-	//    Partial stealth, but works with no npm and no upstream tarball.
-	body, err := downloadDriver()
-	if err != nil {
-		return err
-	}
-	if err := unzip(body, dir); err != nil {
-		reset(dir)
-		return err
-	}
-	if err := patchBundle(dir); err != nil {
-		reset(dir)
-		return err
-	}
-	return finish(dir, SourceBundleTransforms)
+	// Both paths failed. There is deliberately no third tier: a half-stealth
+	// driver is worse than a clear failure, because a user who thinks they're
+	// undetected and isn't is in a worse spot than one who got an error.
+	return fmt.Errorf("could not provision a fully patched driver: playwright's driver CDN and the patchright-core npm package were both unreachable")
 }
 
 // finish stamps the dir and makes sure a usable node runtime is wired up:

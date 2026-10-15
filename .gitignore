@@ -26,3 +26,6 @@ artifacts/
 *.swp
 .DS_Store
 Thumbs.db
+
+# Editor / tool local config.
+.kilo/

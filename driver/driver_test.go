@@ -13,25 +13,15 @@ import (
 	"testing"
 )
 
-// fakeBundle writes a minimal stock-shaped driver dir for transform tests.
-func fakeBundle(t *testing.T) string {
+// fakeDriverDir writes a minimal patched-shaped driver dir: a cli.js plus a
+// lib/bundle.js whose contents decide whether verifyBundle accepts it.
+func fakeDriverDir(t *testing.T, bundle string) string {
 	t.Helper()
 	dir := t.TempDir()
 	lib := filepath.Join(dir, "package", "lib", "server")
 	if err := os.MkdirAll(lib, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	bundle := strings.Join([]string{
-		`const switches = ['--enable-automation','--disable-popup-blocking','--headless'];`,
-		`chromeArguments.push('--headless');`,
-		`chromeArguments.push('--enable-unsafe-swiftshader');`,
-		`await session.send('Runtime.enable');`,
-		`await this._client.send("Runtime.enable");`,
-		`if (typeof value === 'function' && value.name.startsWith(kFunctionBindingPrefix)) return { fn: value.name };`,
-		`const x = 1; //# sourceURL=browser.js`,
-		`globalThis.__playwright__binding__ = {};`,
-		`globalThis.__playwright__binding__controller__ = {};`,
-	}, "\n")
 	if err := os.WriteFile(filepath.Join(lib, "serverBundle.js"), []byte(bundle), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -41,51 +31,36 @@ func fakeBundle(t *testing.T) string {
 	return dir
 }
 
-func TestPatchBundle(t *testing.T) {
-	dir := fakeBundle(t)
-	if err := patchBundle(dir); err != nil {
-		t.Fatal(err)
-	}
-	data, err := os.ReadFile(filepath.Join(dir, "package", "lib", "server", "serverBundle.js"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	out := string(data)
-	for _, leaked := range []string{
-		"'--enable-automation'",
-		"'--disable-popup-blocking'",
-		"chromeArguments.push('--headless');",
-		"--enable-unsafe-swiftshader",
-		"send('Runtime.enable')",
-		`send("Runtime.enable")`,
-		"value.name.startsWith(kFunctionBindingPrefix)",
-		"//# sourceURL=",
-		"__playwright__binding__",
-	} {
-		if strings.Contains(out, leaked) {
-			t.Errorf("leak still present: %q", leaked)
-		}
-	}
-	for _, want := range []string{
-		"chromeArguments.push('--headless=new')",
-		"/^f[0-9a-f]{32}$/.test(value.name)",
-		"__binding__",
-	} {
-		if !strings.Contains(out, want) {
-			t.Errorf("missing: %q", want)
-		}
-	}
-}
+// patchedBundle is the shape verifyBundle looks for: any of the upstream
+// stealth markers applied to the built bundle.
+const patchedBundle = `const switches = ['--disable-blink-features=AutomationControlled'];`
 
-func TestPatchBundleUnknownLayout(t *testing.T) {
-	dir := t.TempDir()
-	if err := patchBundle(dir); err == nil {
-		t.Error("want error for empty dir, got nil")
+// stockBundle carries none of the markers.
+const stockBundle = `const switches = ['--enable-automation'];`
+
+// TestVerifyBundle covers the only gate that stands between a user and a
+// silently-unpatched driver.
+func TestVerifyBundle(t *testing.T) {
+	if err := verifyBundle(fakeDriverDir(t, patchedBundle)); err != nil {
+		t.Errorf("patched bundle rejected: %v", err)
+	}
+	if err := verifyBundle(fakeDriverDir(t, stockBundle)); err == nil {
+		t.Error("stock bundle accepted: provisioning would have served a driver with no stealth")
+	}
+	// missing cli.js must fail even with markers present.
+	noCli := fakeDriverDir(t, patchedBundle)
+	os.Remove(filepath.Join(noCli, "package", "cli.js"))
+	if err := verifyBundle(noCli); err == nil {
+		t.Error("dir without cli.js accepted")
+	}
+	// empty dir must fail.
+	if err := verifyBundle(t.TempDir()); err == nil {
+		t.Error("empty dir accepted")
 	}
 }
 
 func TestStampRoundtrip(t *testing.T) {
-	dir := fakeBundle(t)
+	dir := fakeDriverDir(t, patchedBundle)
 	if ok, _ := isPatched(dir); ok {
 		t.Fatal("unstamped dir reads as patched")
 	}
@@ -121,7 +96,7 @@ func TestStampRoundtrip(t *testing.T) {
 }
 
 func TestNodeSource(t *testing.T) {
-	dir := fakeBundle(t)
+	dir := fakeDriverDir(t, patchedBundle)
 	// fixture has no bundled node, so source depends on the environment.
 	src := NodeSource(dir)
 	if src != "bundled" && !strings.HasPrefix(src, "system:") && src != "none" {
@@ -143,7 +118,7 @@ func TestNodeSource(t *testing.T) {
 func TestEnsureNodeShortCircuits(t *testing.T) {
 	// bundled node present: must return without consulting the environment
 	// or the network.
-	dir := fakeBundle(t)
+	dir := fakeDriverDir(t, patchedBundle)
 	if err := os.WriteFile(filepath.Join(dir, nodeFileName()), []byte("x"), 0o755); err != nil {
 		t.Fatal(err)
 	}
