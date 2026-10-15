@@ -96,13 +96,25 @@ go run ./demo                 # tells you stealth source + node source
 go run ./demo -check-only     # no browser needed
 ```
 
+## parity with upstream patchright — honest status
+
+**full parity: driver-level stealth.** the runtime driver is upstream's *own* `patchright-core` build, so the patches doing the work are Vinyzu's, not a reimplementation.
+
+**one mode.** `client.Run()` provisions a patched driver or errors — there's no wrapper-only mode and no partial-stealth fallback, by design.
+
+**restored parity: isolated-world evaluate.** `client.EvaluateIsolated(page, fn, arg)` runs in a dedicated `Page.createIsolatedWorld` context via `Runtime.callFunctionOn`, which is what patchright's python/nodejs clients do by default. the playwright-go binding can't express the `isolatedContext` flag, so we reach it through the CDP seam instead of forking the binding. `EvaluateHandleIsolated` returns the raw CDP object id (documented limitation: pw's `JSHandle` is driver-backed, so a handle can't be fabricated from a CDP object).
+
+**known gaps:**
+- **driver version lags upstream.** pinned to **1.60.0** because playwright-go hard-codes its driver version and newer pw-go tags flipped their import path to `github.com/mxschmitt/...`. upstream patchright is further along. `driver` now *diagnoses* a stale pin instead of blaming the network, so a bump is deliberate rather than a silent regression.
+- **client convenience surface** differs from `patchright-nodejs` (e.g. their `patchright.chromium.launch` shortcuts). `client.LaunchStealth` covers the launch path; not every convenience wrapper is mirrored.
+
 ## what's inside
 
 | package | what it do |
 |---|---|
 | `patcher` | the full source-level patch pipeline (47 transforms over a playwright checkout, for building drivers yourself / CI). `driver/` is what normal users hit — same stealth, applied to the downloaded bundle instead of sources |
 | `stealth` | the runtime sneaky bits as testable go code: CSP relaxation, `<head>` injection placement, launch-switch policy, `f[0-9a-f]{32}` bridge naming |
-| `client` | the one mode + the one launch seam. `Run()` auto-provisions the patched driver; `LaunchStealth()` owns browser selection, switch policy, inject route and page acquisition in one place |
+| `client` | the one mode + the one launch seam. `Run()` auto-provisions the patched driver; `LaunchStealth()` owns browser selection, switch policy, inject route and page; `EvaluateIsolated()` restores patchright's isolated-world evaluate default (no forked binding) |
 | `driver` | self-provisioning patched driver: npm overlay of upstream's patched core, npm-only outage path (with node self-download). `driver.Ensure()` returns a `DriverDirectory` for playwright-go. fails loudly rather than serving partial stealth |
 | `browsers` | finds every chromium on your machine (install dirs, start menu + desktop shortcuts, registry App Paths, PATH, flatpak, playwright's own bundle) on windows/mac/linux, picks the one you actually use |
 | `demo` | the showcase. discovers browser, launches stealthy, dumps webdriver/globals/plugins/UA, proves init scripts + bindings + shadow DOM piercing work. reports which driver tier ran |

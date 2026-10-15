@@ -195,7 +195,27 @@ func provision(dir string) error {
 	// Both paths failed. There is deliberately no third tier: a half-stealth
 	// driver is worse than a clear failure, because a user who thinks they're
 	// undetected and isn't is in a worse spot than one who got an error.
+	// Before blaming the networks, check the boring cause: a stale Version pin
+	// produces exactly this symptom, and deserves a different error.
+	if reason := diagnoseUnavailable(); reason != "" {
+		return fmt.Errorf("could not provision a patched driver: %s", reason)
+	}
 	return fmt.Errorf("could not provision a fully patched driver: playwright's driver CDN and the patchright-core npm package were both unreachable")
+}
+
+// diagnoseUnavailable explains a provisioning failure when the cause is
+// configuration rather than the network. Returns "" when there is nothing more
+// specific to say (i.e. both sources look reachable in principle).
+func diagnoseUnavailable() string {
+	pack, err := fetchPackument()
+	if err != nil {
+		return "" // npm is unreachable too; the generic network error is right
+	}
+	if _, ok := pack.Versions[patchrightCoreVersion()]; ok {
+		return ""
+	}
+	return fmt.Sprintf("patchright-core %s is not published on npm, so there is no full-stealth package to overlay — bump driver.Version, verify playwright-go's hard-coded driver version, or set PATCHRIGHT_CORE_VERSION",
+		patchrightCoreVersion())
 }
 
 // finish stamps the dir and makes sure a usable node runtime is wired up:

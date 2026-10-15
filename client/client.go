@@ -34,8 +34,9 @@ const ChromiumChannel = "chrome"
 type Instance struct {
 	PW *pw.Playwright
 
-	mu       sync.Mutex
-	injected map[pw.BrowserContext]bool
+	mu         sync.Mutex
+	injected   map[pw.BrowserContext]bool
+	ownedPages map[pw.Page]pw.BrowserContext
 }
 
 // Run starts the PATCHED driver and wraps it. First call downloads the stock
@@ -61,7 +62,7 @@ func Run(options ...*pw.RunOptions) (*Instance, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Instance{PW: p, injected: map[pw.BrowserContext]bool{}}, nil
+	return &Instance{PW: p, injected: map[pw.BrowserContext]bool{}, ownedPages: map[pw.Page]pw.BrowserContext{}}, nil
 }
 
 // LaunchStealth is the deep launch seam: it owns the whole "give me a usable
@@ -114,7 +115,22 @@ func (in *Instance) LaunchStealth(picked *browsers.Found, headless bool) (pw.Bro
 			return nil, nil, err
 		}
 	}
+	// Release the isolated world when the page goes away, so the CDP session
+	// and its execution context do not leak. playwright-go exposes no
+	// page-close hook, so ReleasePage is the caller's cue; it is also idempotent
+	// and safe to skip (the world dies with the browser process either way).
 	return ctx, page, nil
+}
+
+// ReleasePage drops the isolated execution context cached for a page obtained
+// from LaunchStealth. Call after closing the page; idempotent.
+func (in *Instance) ReleasePage(page pw.Page) {
+	releaseIsolatedWorld(page)
+	in.mu.Lock()
+	if in.ownedPages != nil {
+		delete(in.ownedPages, page)
+	}
+	in.mu.Unlock()
 }
 
 // Patched reports whether the driver under this instance looks like a
